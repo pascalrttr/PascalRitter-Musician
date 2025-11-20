@@ -1,10 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Meine Website</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Willkommen auf meiner Seite</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+
+        header {
+            background: #333;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            color: #fff;
+            margin: 0;
+        }
+
+        section {
+            padding: 40px;
+            max-width: 800px;
+            margin: auto;
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        p {
+            line-height: 1.6;
+            font-size: 18px;
+            color: #555;
+        }
+
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            padding: 20px;
+            background: #ddd;
+            color: #333;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Hallo! Das ist meine erste GitHub-Website.</h1>
+
+    <header>
+        <h1>Herzlich willkommen!</h1>
+    </header>
+
+    <section>
+        <h2>Schön, dass du hier bist</h2>
+        <p>
+            Dies ist meine persönliche Website.  
+            Hier wird es bald Infos, Bilder und weitere Inhalte geben.
+        </p>
+
+        <a href="#" class="button">Mehr erfahren</a>
+    </section>
+
+    <footer>
+        © 2025 – Meine Website
+    </footer>
+
 </body>
 </html>
