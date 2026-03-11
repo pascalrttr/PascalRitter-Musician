@@ -160,9 +160,11 @@ body.home {
 .page-hero {
   position: relative;
   width: 100%;
-  height: 70vh;
-  background-size: cover;
-  background-position: center;
+  background-size: contain;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: var(--bg);
+  min-height: 60vh;
   display: flex;
   align-items: flex-end;
 }
