@@ -13,71 +13,100 @@
   <nav>
     <a href="index.html" class="nav-logo">Pascal Ritter</a>
     <ul class="nav-links">
-      <li><a href="projekte.html" class="active">Projekte</a></li>
-      <li><a href="unterricht.html">Unterricht</a></li>
+      <li><a href="projekte.html" class="active" data-de="Projekte" data-en="Projects">Projekte</a></li>
+      <li><a href="unterricht.html" data-de="Unterricht" data-en="Lessons">Unterricht</a></li>
       <li><a href="producing.html">Producing</a></li>
+      <li><button class="lang-toggle" onclick="toggleLang()">EN</button></li>
     </ul>
   </nav>
 
-  <main class="page">
+  <main class="page" style="padding-top: 8rem;">
     <div class="page-header">
-      <p class="page-label">Meine Arbeit</p>
+      <p class="page-label" data-de="Meine Arbeit" data-en="My Work">Meine Arbeit</p>
       <h1 class="page-title">Pro<em>jekte</em></h1>
     </div>
 
-    <p class="section-label">Musik</p>
-    <div class="project-list">
+    <p class="section-label" data-de="Musik" data-en="Music">Musik</p>
 
-      <a href="https://www.youtube.com/watch?v=ccQGraREtJs" class="project-item with-thumb" target="_blank">
-        <img class="yt-thumb" src="https://img.youtube.com/vi/ccQGraREtJs/hqdefault.jpg" alt="EAUPHIL"/>
-        <div class="project-text">
-          <span class="project-name">EAUPHIL</span>
-          <span class="project-detail">Jazz Quartett · Gitarrist & Komponist</span>
-        </div>
-        <span class="project-arrow">↗</span>
-      </a>
-
-      <a href="https://www.youtube.com/watch?v=8qOaZN_Qj58" class="project-item with-thumb" target="_blank">
-        <img class="yt-thumb" src="https://img.youtube.com/vi/8qOaZN_Qj58/hqdefault.jpg" alt="Taro"/>
-        <div class="project-text">
-          <span class="project-name">Taro</span>
-          <span class="project-detail">Gitarrist</span>
-        </div>
-        <span class="project-arrow">↗</span>
-      </a>
-
-      <a href="https://www.youtube.com/watch?v=s6VEn4XC09k" class="project-item with-thumb" target="_blank">
-        <img class="yt-thumb" src="https://img.youtube.com/vi/s6VEn4XC09k/hqdefault.jpg" alt="Stein Walter Frank Meier"/>
-        <div class="project-text">
-          <span class="project-name">Stein Walter Frank Meier</span>
-          <span class="project-detail">Punk Band · Gitarrist</span>
-        </div>
-        <span class="project-arrow">↗</span>
-      </a>
-
+    <!-- EAUPHIL -->
+    <div class="project-card">
+      <div class="project-card-top">
+        <a href="https://www.youtube.com/watch?v=ccQGraREtJs" target="_blank" class="project-thumb-wrap">
+          <img src="https://img.youtube.com/vi/ccQGraREtJs/hqdefault.jpg" alt="EAUPHIL" class="project-thumb"/>
+          <span class="play-icon">▶</span>
+        </a>
+        <img src="eauphil.jpg" alt="EAUPHIL Band" class="project-band-photo"/>
+      </div>
+      <div class="project-card-body">
+        <h2 class="project-card-name">EAUPHIL</h2>
+        <p class="project-card-role" data-de="Jazz Quartett · Gitarrist & Komponist" data-en="Jazz Quartet · Guitarist & Composer">Jazz Quartett · Gitarrist & Komponist</p>
+        <p class="project-card-desc" data-de="EAUPHIL ist ein Berliner Jazz Quartett, das zeitgenössischen Jazz mit kompositorischer Tiefe verbindet." data-en="EAUPHIL is a Berlin-based jazz quartet combining contemporary jazz with compositional depth.">EAUPHIL ist ein Berliner Jazz Quartett, das zeitgenössischen Jazz mit kompositorischer Tiefe verbindet.</p>
+      </div>
     </div>
 
-    <p class="section-label" style="margin-top:3.5rem;">Theater</p>
-    <div class="project-list">
+    <!-- TARO -->
+    <div class="project-card">
+      <div class="project-card-top">
+        <a href="https://www.youtube.com/watch?v=8qOaZN_Qj58" target="_blank" class="project-thumb-wrap">
+          <img src="https://img.youtube.com/vi/8qOaZN_Qj58/hqdefault.jpg" alt="Taro" class="project-thumb"/>
+          <span class="play-icon">▶</span>
+        </a>
+        <img src="taro.jpg" alt="Taro" class="project-band-photo"/>
+      </div>
+      <div class="project-card-body">
+        <h2 class="project-card-name">Taro</h2>
+        <p class="project-card-role" data-de="Gitarrist" data-en="Guitarist">Gitarrist</p>
+        <p class="project-card-desc" data-de="Taro ist ein Berliner Musikprojekt mit einem einzigartigen Sound zwischen Indie und experimenteller Musik." data-en="Taro is a Berlin-based music project with a unique sound between indie and experimental music.">Taro ist ein Berliner Musikprojekt mit einem einzigartigen Sound zwischen Indie und experimenteller Musik.</p>
+      </div>
+    </div>
 
-      <a href="https://www.youtube.com/watch?v=_RAsnxvQSBE" class="project-item with-thumb" target="_blank">
-        <img class="yt-thumb" src="https://img.youtube.com/vi/_RAsnxvQSBE/hqdefault.jpg" alt="Ein wenig Licht"/>
-        <div class="project-text">
-          <span class="project-name">Ein wenig Licht und diese Ruhe</span>
-          <span class="project-detail">Uraufführung · Sibylle Berg · Katja Riemann · Regie: Lena Brasch · Gitarrist & Komponist</span>
-        </div>
-        <span class="project-arrow">↗</span>
-      </a>
+    <!-- STEIN WALTER FRANK MEIER -->
+    <div class="project-card">
+      <div class="project-card-top single">
+        <a href="https://www.youtube.com/watch?v=s6VEn4XC09k" target="_blank" class="project-thumb-wrap wide">
+          <img src="https://img.youtube.com/vi/s6VEn4XC09k/hqdefault.jpg" alt="Stein Walter Frank Meier" class="project-thumb"/>
+          <span class="play-icon">▶</span>
+        </a>
+      </div>
+      <div class="project-card-body">
+        <h2 class="project-card-name">Stein Walter Frank Meier</h2>
+        <p class="project-card-role" data-de="Punk Band · Gitarrist" data-en="Punk Band · Guitarist">Punk Band · Gitarrist</p>
+        <p class="project-card-desc" data-de="Eine Berliner Punk Band mit roher Energie und direktem Sound." data-en="A Berlin punk band with raw energy and a direct sound.">Eine Berliner Punk Band mit roher Energie und direktem Sound.</p>
+      </div>
+    </div>
 
-      <div class="project-item with-thumb no-link">
-        <div class="yt-thumb placeholder"></div>
-        <div class="project-text">
-          <span class="project-name">All the Sex I've ever had</span>
-          <span class="project-detail">Mammalian Diving Reflex · Musiker & Sound-Designer</span>
+    <p class="section-label" style="margin-top:4rem;" data-de="Theater" data-en="Theatre">Theater</p>
+
+    <!-- EIN WENIG LICHT -->
+    <div class="project-card">
+      <div class="project-card-top">
+        <a href="https://www.youtube.com/watch?v=_RAsnxvQSBE" target="_blank" class="project-thumb-wrap">
+          <img src="https://img.youtube.com/vi/_RAsnxvQSBE/hqdefault.jpg" alt="Ein wenig Licht" class="project-thumb"/>
+          <span class="play-icon">▶</span>
+        </a>
+        <img src="theater.jpg" alt="Ein wenig Licht und diese Ruhe" class="project-band-photo"/>
+      </div>
+      <div class="project-card-body">
+        <h2 class="project-card-name">Ein wenig Licht und diese Ruhe</h2>
+        <p class="project-card-role" data-de="Gitarrist & Komponist · Uraufführung" data-en="Guitarist & Composer · World Premiere">Gitarrist & Komponist · Uraufführung</p>
+        <p class="project-card-desc" data-de="Theaterstück von Sibylle Berg mit Katja Riemann, inszeniert von Lena Brasch." data-en="Play by Sibylle Berg with Katja Riemann, directed by Lena Brasch.">Theaterstück von Sibylle Berg mit Katja Riemann, inszeniert von Lena Brasch.</p>
+      </div>
+    </div>
+
+    <!-- ALL THE SEX -->
+    <div class="project-card">
+      <div class="project-card-top single">
+        <div class="project-thumb-wrap wide no-link">
+          <div class="project-thumb placeholder-thumb"></div>
         </div>
       </div>
-
+      <div class="project-card-body">
+        <h2 class="project-card-name">All the Sex I've ever had</h2>
+        <p class="project-card-role" data-de="Musiker & Sound-Designer" data-en="Musician & Sound Designer">Musiker & Sound-Designer</p>
+        <p class="project-card-desc" data-de="Theaterstück des kanadischen Mammalian Diving Reflex Teams." data-en="Theatre piece by the Canadian Mammalian Diving Reflex team.">Theaterstück des kanadischen Mammalian Diving Reflex Teams.</p>
+      </div>
     </div>
+
   </main>
 
   <footer class="page-footer">
@@ -85,9 +114,10 @@
     <div class="footer-links">
       <a href="#">Instagram</a>
       <a href="#">YouTube</a>
-      <a href="mailto:mail@pascalritter.de">Kontakt</a>
+      <a href="mailto:pascal.ritter@gmx.net" data-de="Kontakt" data-en="Contact">Kontakt</a>
     </div>
   </footer>
 
+  <script src="lang.js"></script>
 </body>
 </html>
