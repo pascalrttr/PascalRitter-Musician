@@ -160,6 +160,42 @@ body.home {
   color: rgba(255,255,255,0.95);
 }
 
+/* ── SEITEN-FOTO ── */
+.page-photo {
+  position: relative;
+  width: 100%;
+  height: 55vh;
+  overflow: hidden;
+}
+
+.page-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.page-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(14,14,12,0.85));
+}
+
+.inline-photo {
+  margin: 3rem 0;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.inline-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(20%);
+}
+
 /* ── UNTERSEITEN ── */
 body.subpage {
   min-height: 100vh;
@@ -251,6 +287,29 @@ body.subpage {
 }
 
 .text-block p:last-child { margin-bottom: 0; }
+
+.section-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.project-item.no-link {
+  cursor: default;
+}
+
+.price {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--text-bright);
+}
+
+.price span {
+  font-size: 1rem;
+  color: var(--text-dim);
+}
 
 .divider {
   border: none;
