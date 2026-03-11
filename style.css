@@ -84,10 +84,6 @@ body.home {
   background: #1a1a16;
 }
 
-/* Fallback wenn Bild nicht geladen */
-.hero-img[src="images/hero.jpg"]:not([complete]) {
-  display: none;
-}
 
 .hero-overlay {
   position: absolute;
