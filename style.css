@@ -65,13 +65,13 @@ nav {
 
 /* ── HERO (Startseite) ── */
 body.home {
-  overflow: hidden;
-  height: 100vh;
+  overflow-x: hidden;
 }
 
 .hero-bg {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  height: 100vh;
   z-index: 0;
 }
 
@@ -97,7 +97,7 @@ body.home {
 }
 
 .hero-text {
-  position: fixed;
+  position: absolute;
   bottom: 4rem;
   left: 3.5rem;
   z-index: 10;
@@ -128,7 +128,7 @@ body.home {
 }
 
 .home-footer {
-  position: fixed;
+  position: absolute;
   bottom: 4rem;
   right: 3.5rem;
   z-index: 10;
@@ -717,4 +717,9 @@ footer.page-footer .footer-links a:hover { color: var(--text-bright); }
   .card-play-btn.full { height: 55vw; }
   .card-yt-thumb.full { height: 55vw; }
   .sticky-card-body { padding: 2rem 1.5rem; }
+}
+
+.hero-section {
+  position: relative;
+  height: 100vh;
 }
