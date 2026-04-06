@@ -7,9 +7,9 @@
   --text-dim: #5a5a52;
   --text: #a8a898;
   --text-bright: #e8e8d8;
-  --accent: #c8a96a;
+  --accent: #AE0315;
   --font-serif: 'EB Garamond', Georgia, serif;
-  --font-sans: 'Jost', sans-serif;
+  --font-sans: 'Barlow', sans-serif;
 }
 
 html, body { height: 100%; }
