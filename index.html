@@ -13,18 +13,17 @@
   <nav>
     <a href="index.html" class="nav-logo">Pascal Ritter</a>
     <ul class="nav-links">
-      <li><a href="projekte.html" data-de="Projekte" data-en="Projects">Projekte</a></li>
       <li><a href="unterricht.html" data-de="Unterricht" data-en="Lessons">Unterricht</a></li>
       <li><a href="producing.html">Producing</a></li>
       <li><button class="lang-toggle" onclick="toggleLang()">EN</button></li>
     </ul>
   </nav>
 
+  <!-- HERO -->
   <div class="hero-bg">
     <img src="images/hero.jpg" alt="Pascal Ritter" class="hero-img"/>
     <div class="hero-overlay"></div>
   </div>
-
   <div class="hero-text">
     <h1>Pascal<br><em>Ritter</em></h1>
     <p class="hero-sub" data-de="Musiker · Komponist · Gitarrist · Produzent · Lehrer" data-en="Musician · Composer · Guitarist · Producer · Teacher">
@@ -32,12 +31,93 @@
     </p>
   </div>
 
-  <footer class="home-footer">
+  <!-- PROJEKTE (sticky cards) -->
+  <div class="cards-section">
+
+    <div class="sticky-card" style="--card-bg: #0e0e0c;">
+      <div class="sticky-card-img">
+        <img src="eauphil.jpg" alt="EAUPHIL"/>
+        <a href="https://www.youtube.com/watch?v=TdYoJe3tGbo" target="_blank" class="card-play-btn">
+          <img class="card-yt-thumb" src="https://img.youtube.com/vi/TdYoJe3tGbo/hqdefault.jpg" alt="EAUPHIL Video"/>
+          <span class="card-play-icon">▶</span>
+        </a>
+      </div>
+      <div class="sticky-card-body">
+        <p class="card-label" data-de="Jazz Quartett · Gitarrist & Komponist" data-en="Jazz Quartet · Guitarist & Composer">Jazz Quartett · Gitarrist & Komponist</p>
+        <h2 class="card-title">EAUPHIL</h2>
+        <p class="card-desc" data-de="Ein Berliner Jazz Quartett, das zeitgenössischen Jazz mit kompositorischer Tiefe verbindet." data-en="A Berlin-based jazz quartet combining contemporary jazz with compositional depth.">Ein Berliner Jazz Quartett, das zeitgenössischen Jazz mit kompositorischer Tiefe verbindet.</p>
+      </div>
+    </div>
+
+    <div class="sticky-card" style="--card-bg: #111110;">
+      <div class="sticky-card-img">
+        <img src="taro.jpg" alt="Taro"/>
+        <a href="https://www.youtube.com/watch?v=8qOaZN_Qj58" target="_blank" class="card-play-btn">
+          <img class="card-yt-thumb" src="https://img.youtube.com/vi/8qOaZN_Qj58/hqdefault.jpg" alt="Taro Video"/>
+          <span class="card-play-icon">▶</span>
+        </a>
+      </div>
+      <div class="sticky-card-body">
+        <p class="card-label" data-de="Gitarrist" data-en="Guitarist">Gitarrist</p>
+        <h2 class="card-title">Taro</h2>
+        <p class="card-desc" data-de="Ein Berliner Musikprojekt mit einem einzigartigen Sound zwischen Indie und experimenteller Musik." data-en="A Berlin-based music project with a unique sound between indie and experimental music.">Ein Berliner Musikprojekt mit einem einzigartigen Sound zwischen Indie und experimenteller Musik.</p>
+      </div>
+    </div>
+
+    <div class="sticky-card" style="--card-bg: #0d0d0b;">
+      <div class="sticky-card-img single">
+        <a href="https://www.youtube.com/watch?v=s6VEn4XC09k" target="_blank" class="card-play-btn full">
+          <img class="card-yt-thumb full" src="https://img.youtube.com/vi/s6VEn4XC09k/hqdefault.jpg" alt="Stein Walter Frank Meier"/>
+          <span class="card-play-icon">▶</span>
+        </a>
+      </div>
+      <div class="sticky-card-body">
+        <p class="card-label" data-de="Punk Band · Gitarrist" data-en="Punk Band · Guitarist">Punk Band · Gitarrist</p>
+        <h2 class="card-title">Stein Walter Frank Meier</h2>
+        <p class="card-desc" data-de="Eine Berliner Punk Band mit roher Energie und direktem Sound." data-en="A Berlin punk band with raw energy and a direct sound.">Eine Berliner Punk Band mit roher Energie und direktem Sound.</p>
+      </div>
+    </div>
+
+    <div class="sticky-card" style="--card-bg: #121210;">
+      <div class="sticky-card-img">
+        <img src="theater.jpg" alt="Ein wenig Licht und diese Ruhe"/>
+        <a href="https://www.youtube.com/watch?v=_RAsnxvQSBE" target="_blank" class="card-play-btn">
+          <img class="card-yt-thumb" src="https://img.youtube.com/vi/_RAsnxvQSBE/hqdefault.jpg" alt="Ein wenig Licht Video"/>
+          <span class="card-play-icon">▶</span>
+        </a>
+      </div>
+      <div class="sticky-card-body">
+        <p class="card-label" data-de="Theater · Gitarrist & Komponist" data-en="Theatre · Guitarist & Composer">Theater · Gitarrist & Komponist</p>
+        <h2 class="card-title">Ein wenig Licht<br>und diese Ruhe</h2>
+        <p class="card-desc" data-de="Uraufführung · Sibylle Berg · Katja Riemann · Regie: Lena Brasch" data-en="World Premiere · Sibylle Berg · Katja Riemann · Dir: Lena Brasch">Uraufführung · Sibylle Berg · Katja Riemann · Regie: Lena Brasch</p>
+      </div>
+    </div>
+
+    <div class="sticky-card" style="--card-bg: #0e0e0c;">
+      <div class="sticky-card-img single">
+        <a href="https://www.youtube.com/watch?v=3mZ8CZf-W5M" target="_blank" class="card-play-btn full">
+          <img class="card-yt-thumb full" src="https://img.youtube.com/vi/3mZ8CZf-W5M/hqdefault.jpg" alt="All the Sex"/>
+          <span class="card-play-icon">▶</span>
+        </a>
+      </div>
+      <div class="sticky-card-body">
+        <p class="card-label" data-de="Theater · Musiker & Sound-Designer" data-en="Theatre · Musician & Sound Designer">Theater · Musiker & Sound-Designer</p>
+        <h2 class="card-title">All the Sex<br>I've ever had</h2>
+        <p class="card-desc" data-de="Theaterstück des kanadischen Mammalian Diving Reflex Teams." data-en="Theatre piece by the Canadian Mammalian Diving Reflex team.">Theaterstück des kanadischen Mammalian Diving Reflex Teams.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer">
+    <p>© 2025 Pascal Ritter</p>
     <div class="footer-links">
       <a href="#">Instagram</a>
       <a href="#">YouTube</a>
-      <a href="/cdn-cgi/l/email-protection#deaebfadbdbfb2f0acb7aaaabbac9eb9b3a6f0b0bbaa" data-de="Kontakt" data-en="Contact">Kontakt</a>
+      <a href="mailto:pascal.ritter@gmx.net" data-de="Kontakt" data-en="Contact">Kontakt</a>
     </div>
   </footer>
 
-  <scr
+  <script src="lang.js"></script>
+</body>
+</html>
