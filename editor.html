@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Seiten-Editor</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #121211; --panel: #1b1b19; --panel2: #232321; --line: #2e2e2b;
+  --text: #dcdcd2; --dim: #85857d; --red: #AE0315; --sel: #4da3ff; --guide: #ff3b6b;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; background: var(--bg); color: var(--text);
+  font: 13px/1.4 'Barlow', system-ui, sans-serif; overflow: hidden; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+button:hover { background: #2e2e2b; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--sel); outline-offset: 1px; }
+button.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 500; }
+button.primary:hover { background: #c20418; }
+button.ok { border-color: #2f5d3a; color: #9fd8ac; }
+button:disabled { opacity: .4; cursor: default; }
+select, input[type=text], input[type=number], input[type=url], textarea {
+  background: #121211; border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; min-width: 0; }
+input[type=color] { width: 28px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; }
+
+/* Leiste oben */
+.bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.bar .grow { flex: 1; }
+.bar .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
+.bar label { display: flex; align-items: center; gap: 6px; color: var(--dim); }
+#zoom { width: 110px; accent-color: var(--red); }
+#status { color: var(--dim); margin-right: 4px; }
+#status.dirty { color: #ff8a8a; }
+
+.main { flex: 1; display: flex; min-height: 0; }
+
+/* Bilder links */
+.assets { width: 250px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 10px; }
+.assets input { width: 100%; margin-bottom: 8px; }
+.assets details { margin-bottom: 10px; }
+.assets summary { cursor: pointer; color: var(--dim); padding: 4px 0; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.asset { background: #0d0d0c; border: 1px solid var(--line); border-radius: 5px; padding: 4px; cursor: grab; }
+.asset:hover { border-color: var(--sel); }
+.asset img { display: block; width: 100%; height: 56px; object-fit: contain; pointer-events: none; }
+.asset span { display: block; font-size: 10px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
+.note { color: var(--dim); font-size: 12px; line-height: 1.5; }
+.note.warn { color: #f0b26b; }
+
+/* Arbeitsfläche */
+#viewport { flex: 1; overflow: auto; position: relative; background-color: #0b0b0a;
+  background-image: radial-gradient(#1f1f1d 1px, transparent 1px); background-size: 16px 16px; }
+#viewport.drop { box-shadow: inset 0 0 0 3px var(--sel); }
+#stage { position: relative; margin: 40px auto 80px; box-shadow: 0 0 0 1px #34342f, 0 20px 60px rgba(0,0,0,.6); }
+#items { position: absolute; inset: 0; overflow: hidden; }
+#stage.show-overflow #items { overflow: visible; }
+.item { position: absolute; transform-origin: 50% 50%; cursor: move; user-select: none; -webkit-user-select: none; }
+.item img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; }
+.item.text { white-space: pre-wrap; line-height: 1.3; }
+.item:hover { outline: 1px solid rgba(77,163,255,.55); }
+.item.sel { outline: 1.5px solid var(--sel); }
+.item.has-link::after { content: '↗'; position: absolute; top: -9px; right: -9px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--red); color: #fff; font: 600 11px/18px 'Barlow', sans-serif; text-align: center; pointer-events: none; }
+#stage.clean .item.has-link::after, #stage.clean .item:hover { outline: none; }
+#stage.clean .item.has-link::after { display: none; }
+.h { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; background: #fff; border: 1.5px solid var(--sel); border-radius: 2px; z-index: 5; }
+.h[data-h=nw] { left: 0; top: 0; cursor: nwse-resize; } .h[data-h=se] { left: 100%; top: 100%; cursor: nwse-resize; }
+.h[data-h=ne] { left: 100%; top: 0; cursor: nesw-resize; } .h[data-h=sw] { left: 0; top: 100%; cursor: nesw-resize; }
+.h[data-h=n] { left: 50%; top: 0; cursor: ns-resize; } .h[data-h=s] { left: 50%; top: 100%; cursor: ns-resize; }
+.h[data-h=e] { left: 100%; top: 50%; cursor: ew-resize; } .h[data-h=w] { left: 0; top: 50%; cursor: ew-resize; }
+.h.side { background: var(--sel); border-color: #fff; }
+.h[data-h=rot] { left: 50%; top: -30px; border-radius: 50%; cursor: grab; }
+.h[data-h=rot]::after { content: ''; position: absolute; left: 3px; top: 9px; width: 1px; height: 20px; background: var(--sel); }
+#overlay { position: absolute; inset: 0; pointer-events: none; }
+.guide { position: absolute; background: var(--guide); }
+.marquee { position: absolute; border: 1px solid var(--sel); background: rgba(77,163,255,.12); }
+#heightHandle { position: absolute; left: 0; right: 0; bottom: -18px; height: 18px; cursor: ns-resize; display: flex; justify-content: center; align-items: center; color: var(--dim); font-size: 11px; }
+#heightHandle::before { content: ''; width: 60px; height: 4px; border-radius: 2px; background: #3a3a36; margin-right: 8px; }
+#heightHandle:hover::before { background: var(--sel); }
+
+/* Eigenschaften rechts */
+.inspector { width: 280px; flex-shrink: 0; background: var(--panel); border-left: 1px solid var(--line); overflow: auto; padding: 12px; }
+.inspector h3 { margin: 0 0 2px; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inspector .sub { color: var(--dim); margin-bottom: 12px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec { border-top: 1px solid var(--line); padding: 10px 0; }
+.sec > .t { color: var(--dim); font-size: 11px; letter-spacing: .04em; margin-bottom: 6px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.row.three { grid-template-columns: 1fr 1fr 1fr; }
+.f { display: flex; flex-direction: column; gap: 2px; color: var(--dim); font-size: 11px; }
+.f input, .f select, .f textarea { width: 100%; color: var(--text); font-size: 13px; }
+.f textarea { resize: vertical; min-height: 60px; }
+.check { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--text); }
+.btns { display: flex; flex-wrap: wrap; gap: 5px; }
+.btns button { padding: 4px 8px; font-size: 12px; }
+.sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+.sw.on { border-color: var(--sel); }
+.sw.none { background: repeating-linear-gradient(45deg,#444 0 4px,#222 4px 8px); }
+input[type=range] { width: 100%; accent-color: var(--red); }
+kbd { background: #2a2a27; border: 1px solid #3a3a36; border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; font: 11px/16px ui-monospace, monospace; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; color: var(--dim); font-size: 12px; }
+.danger { color: #ff9a9a; }
+
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); opacity: 0; transition: .25s;
+  background: #2a2a27; border: 1px solid #3a3a36; padding: 10px 16px; border-radius: 8px; pointer-events: none; z-index: 99; max-width: 80vw; }
+#toast.show { opacity: 1; transform: translateX(-50%); }
+
+/* Zeichnen-Overlay */
+#drawModal { position: fixed; inset: 0; background: rgba(8,8,7,.94); z-index: 50; display: none; flex-direction: column; }
+#drawModal.open { display: flex; }
+.draw-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.draw-bar .grow { flex: 1; }
+.draw-tools { display: flex; gap: 3px; background: #0d0d0c; border: 1px solid var(--line); border-radius: 7px; padding: 3px; }
+.draw-tools button { background: none; border: none; border-radius: 5px; }
+.draw-tools button.on { background: var(--red); color: #fff; }
+.draw-size { display: flex; align-items: center; gap: 8px; color: var(--dim); }
+.draw-size input { width: 120px; accent-color: var(--red); }
+.draw-size span { color: var(--text); min-width: 1.6em; display: inline-block; }
+.draw-colors { display: flex; gap: 6px; align-items: center; }
+#drawCanvasWrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 12px; }
+#drawCanvas {
+  touch-action: none; cursor: crosshair; box-shadow: 0 10px 40px rgba(0,0,0,.6);
+  background-color: #111;
+  background-image:
+    linear-gradient(45deg, #1c1c1a 25%, transparent 25%), linear-gradient(-45deg, #1c1c1a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1c1c1a 75%), linear-gradient(-45deg, transparent 75%, #1c1c1a 75%);
+  background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+/* Zuschneiden-Overlay */
+#cropModal { position: fixed; inset: 0; background: rgba(8,8,7,.94); z-index: 50; display: none; flex-direction: column; }
+#cropModal.open { display: flex; }
+.crop-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.crop-bar .grow { flex: 1; }
+.crop-bar .hint { color: var(--dim); font-size: 12px; }
+#cropWrap { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 12px; position: relative; }
+#cropStage { position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+#cropStage img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
+#cropFrame { position: absolute; border: 1.5px solid #fff; cursor: move; touch-action: none;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 0 0 4000px rgba(8,8,7,.6); }
+#cropFrame::before, #cropFrame::after { content: ''; position: absolute; background: rgba(255,255,255,.35); pointer-events: none; }
+#cropFrame::before { left: 33.33%; right: 33.33%; top: 0; bottom: 0; width: 1px; box-shadow: 66.66% 0 0 rgba(255,255,255,.35); }
+#cropFrame::after { top: 33.33%; bottom: 33.33%; left: 0; right: 0; height: 1px; box-shadow: 0 66.66% 0 rgba(255,255,255,.35); }
+.crop-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 1px solid #0e0e0c; border-radius: 2px; transform: translate(-50%, -50%); touch-action: none; }
+.crop-h[data-h=nw] { left: 0; top: 0; cursor: nwse-resize; } .crop-h[data-h=se] { left: 100%; top: 100%; cursor: nwse-resize; }
+.crop-h[data-h=ne] { left: 100%; top: 0; cursor: nesw-resize; } .crop-h[data-h=sw] { left: 0; top: 100%; cursor: nesw-resize; }
+.crop-h[data-h=n] { left: 50%; top: 0; cursor: ns-resize; } .crop-h[data-h=s] { left: 50%; top: 100%; cursor: ns-resize; }
+.crop-h[data-h=e] { left: 100%; top: 50%; cursor: ew-resize; } .crop-h[data-h=w] { left: 0; top: 50%; cursor: ew-resize; }
+
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <button id="btnConnect">Repo-Ordner verbinden</button>
+  <span class="sep"></span>
+  <select id="pageSel" title="Seite wählen"></select>
+  <button id="btnNewPage" title="Neue Seite anlegen">+ Seite</button>
+  <span class="sep"></span>
+  <button id="btnText" title="Textfeld hinzufügen">+ Text</button>
+  <button id="btnDraw" title="Pinsel, Spraydose, Radiergummi">✎ Zeichnen</button>
+  <button id="btnUndo" title="Rückgängig (⌘Z)">↶</button>
+  <button id="btnRedo" title="Wiederholen (⇧⌘Z)">↷</button>
+  <span class="sep"></span>
+  <label>Zoom <input type="range" id="zoom" min="10" max="200" step="1"> <span id="zoomVal"></span></label>
+  <button id="btnFit" title="Seitenbreite einpassen (⌘0)">Einpassen</button>
+  <button id="btnClean" title="Rahmen und Link-Markierungen ausblenden">Ohne Rahmen</button>
+  <span class="grow"></span>
+  <span id="status"></span>
+  <button id="btnPreview" title="Gespeicherte Seite im neuen Tab öffnen">Vorschau</button>
+  <button id="btnSave" class="primary" title="Speichern (⌘S)">Speichern</button>
+</header>
+
+<div class="main">
+  <aside class="assets" id="assetPanel">
+    <input id="assetSearch" type="text" placeholder="Bilder suchen …" aria-label="Bilder suchen">
+    <div id="assetList"></div>
+  </aside>
+  <div id="viewport">
+    <div id="stage">
+      <div id="items"></div>
+      <div id="overlay"></div>
+      <div id="heightHandle" title="Seitenlänge ziehen"></div>
+    </div>
+  </div>
+  <aside class="inspector" id="inspector"></aside>
+</div>
+<div id="toast" role="status"></div>
+
+<div id="drawModal">
+  <div class="draw-bar">
+    <div class="draw-tools" role="group" aria-label="Werkzeug">
+      <button data-tool="brush" class="on" title="Pinsel">✏️ Pinsel</button>
+      <button data-tool="spray" title="Spraydose">💨 Spray</button>
+      <button data-tool="eraser" title="Radiergummi">⌫ Radierer</button>
+    </div>
+    <label class="draw-size">Größe <input type="range" id="drawSizeInput" min="2" max="90" value="18"><span id="drawSizeVal">18</span></label>
+    <div class="draw-colors" role="group" aria-label="Farbe">
+      <button class="sw" style="background:#f2f0e8" data-color="#f2f0e8" title="Weiß"></button>
+      <button class="sw" style="background:#ae0315" data-color="#ae0315" title="Rot"></button>
+      <button class="sw" style="background:#0e0e0c" data-color="#0e0e0c" title="Schwarz"></button>
+      <input type="color" id="drawColorCustom" value="#ae0315" title="Eigene Farbe">
+    </div>
+    <span class="grow"></span>
+    <button id="drawUndo" title="Rückgängig (⌘Z)">↶ Rückgängig</button>
+    <button id="drawClear" title="Alles löschen">Leeren</button>
+    <button id="drawCancel">Abbrechen</button>
+    <button id="drawInsert" class="primary">Einfügen</button>
+  </div>
+  <div id="drawCanvasWrap"><canvas id="drawCanvas" width="1300" height="820"></canvas></div>
+</div>
+
+<div id="cropModal">
+  <div class="crop-bar">
+    <strong id="cropTitle">Zuschneiden</strong>
+    <span class="hint">Rahmen ziehen oder an den Ecken/Kanten ziehen · Shift = Seitenverhältnis sperren</span>
+    <span class="grow"></span>
+    <button id="cropReset" title="Ganzes Bild">Ganzes Bild</button>
+    <button id="cropCancel">Abbrechen</button>
+    <button id="cropApply" class="primary">Übernehmen</button>
+  </div>
+  <div id="cropWrap">
+    <div id="cropStage">
+      <img id="cropImg" alt="">
+      <div id="cropFrame">
+        <div class="crop-h" data-h="nw"></div><div class="crop-h" data-h="n"></div><div class="crop-h" data-h="ne"></div>
+        <div class="crop-h" data-h="w"></div><div class="crop-h" data-h="e"></div>
+        <div class="crop-h" data-h="sw"></div><div class="crop-h" data-h="s"></div><div class="crop-h" data-h="se"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="layout.js"></script>
+<script>
+'use strict';
+/* ───────────────── Zustand ───────────────── */
+const $ = s => document.querySelector(s);
+let data = window.LAYOUT ? JSON.parse(JSON.stringify(window.LAYOUT))
+  : { version: 1, width: 1600, pages: { index: { title: 'Pascal Ritter', background: '#000000', height: 3000, items: [] } } };
+let page = localStorage.getItem('editor.page');
+if (!data.pages[page]) page = Object.keys(data.pages)[0];
+let sel = new Set();
+let zoom = 0.5;
+let dir = null, savedHandle = null;
+const blobs = {};          // Pfad → Blob-URL (wenn Ordner verbunden)
+const natural = {};        // Pfad → {w,h} Originalgröße
+let assets = [];
+let dirty = false;
+let undoStack = [], redoStack = [], lastSnap = JSON.stringify(data);
+let clip = null;
+let cleanView = false;
+const W = () => data.width;
+const P = () => data.pages[page];
+const byId = id => P().items.find(i => i.id === id);
+const uid = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const resolve = p => blobs[p] || p;
+const r1 = v => Math.round(v);
+
+const viewport = $('#viewport'), stage = $('#stage'), itemsEl = $('#items'), overlay = $('#overlay'), insp = $('#inspector');
+
+/* ───────────────── Verlauf ───────────────── */
+function commit() {
+  const s = JSON.stringify(data);
+  if (s === lastSnap) return;
+  undoStack.push(lastSnap); if (undoStack.length > 200) undoStack.shift();
+  redoStack = []; lastSnap = s; setDirty(true); updateUndoBtns();
+}
+function restore(snap) {
+  data = JSON.parse(snap); lastSnap = snap;
+  if (!data.pages[page]) page = Object.keys(data.pages)[0];
+  sel = new Set([...sel].filter(byId));
+  renderPageSel(); renderAll(); setDirty(true); updateUndoBtns();
+}
+function undo() { if (undoStack.length) { redoStack.push(lastSnap); restore(undoStack.pop()); } }
+function redo() { if (redoStack.length) { undoStack.push(lastSnap); restore(redoStack.pop()); } }
+function updateUndoBtns() { $('#btnUndo').disabled = !undoStack.length; $('#btnRedo').disabled = !redoStack.length; }
+function setDirty(v) {
+  dirty = v; const s = $('#status');
+  s.textContent = v ? '● Nicht gespeichert' : (dir ? 'Gespeichert' : ''); s.classList.toggle('dirty', v);
+}
+
+/* ───────────────── Darstellung ───────────────── */
+function applyGeom(el, it) {
+  const s = el.style;
+  s.left = it.x * zoom + 'px'; s.top = it.y * zoom + 'px'; s.width = it.w * zoom + 'px';
+  s.transform = it.rot ? `rotate(${it.rot}deg)` : '';
+  s.opacity = it.opacity == null ? 1 : it.opacity;
+  if (it.type === 'text') {
+    s.height = ''; s.fontSize = it.size * zoom + 'px'; s.color = it.color || '#e2e2d8';
+    s.fontWeight = it.weight || 400; s.textAlign = it.align || 'left';
+  } else {
+    s.height = it.h * zoom + 'px';
+    const img = el.querySelector('img');
+    if (img) { img.style.objectPosition = it.pos || '50% 50%'; img.style.borderRadius = (it.radius || 0) * zoom + 'px'; }
+  }
+}
+function makeEl(it) {
+  const el = document.createElement('div');
+  el.className = 'item' + (it.type === 'text' ? ' text' : '') + (it.link ? ' has-link' : '') + (sel.has(it.id) ? ' sel' : '');
+  el.dataset.id = it.id;
+  if (it.type === 'text') {
+    const sp = document.createElement('span'); sp.textContent = it.text; el.appendChild(sp);
+  } else {
+    const img = document.createElement('img');
+    img.src = resolve(it.src); img.alt = '';
+    img.onload = () => {
+      const known = natural[it.src];
+      natural[it.src] = { w: img.naturalWidth, h: img.naturalHeight };
+      if (!known && sel.has(it.id) && sel.size === 1) renderInspector();
+    };
+    img.onerror = () => { el.style.background = 'repeating-linear-gradient(45deg,#3a0d12 0 8px,#1a0508 8px 16px)'; el.title = 'Bild fehlt: ' + it.src; };
+    el.appendChild(img);
+  }
+  applyGeom(el, it);
+  return el;
+}
+function elOf(id) { return itemsEl.querySelector(`[data-id="${id}"]`); }
+function measureText() {
+  P().items.forEach(it => { if (it.type === 'text') { const el = elOf(it.id); if (el) it.h = r1(el.offsetHeight / zoom); } });
+}
+function renderAll() {
+  stage.style.width = W() * zoom + 'px';
+  stage.style.height = P().height * zoom + 'px';
+  stage.style.background = P().background || '#000';
+  itemsEl.innerHTML = '';
+  P().items.forEach(it => itemsEl.appendChild(makeEl(it)));
+  measureText();
+  $('#heightHandle').textContent = P().height + ' hoch';
+  $('#zoom').value = Math.round(zoom * 100); $('#zoomVal').textContent = Math.round(zoom * 100) + '%';
+  renderSelection(); renderInspector();
+}
+function refreshItem(it) {
+  const old = elOf(it.id); if (!old) return;
+  const el = makeEl(it); old.replaceWith(el);
+  if (it.type === 'text') it.h = r1(el.offsetHeight / zoom);
+  renderSelection();
+}
+function renderSelection() {
+  itemsEl.querySelectorAll('.h').forEach(h => h.remove());
+  itemsEl.querySelectorAll('.item').forEach(el => el.classList.toggle('sel', sel.has(el.dataset.id)));
+  if (sel.size !== 1 || cleanView) return;
+  const it = byId([...sel][0]); const el = elOf(it.id); if (!el) return;
+  const hs = it.type === 'text' ? ['nw', 'ne', 'se', 'sw', 'e', 'w', 'rot'] : ['nw', 'ne', 'se', 'sw', 'n', 'e', 's', 'w', 'rot'];
+  hs.forEach(h => { const d = document.createElement('div'); d.className = 'h' + ('nesw'.includes(h) && h.length === 1 ? ' side' : ''); d.dataset.h = h; el.appendChild(d); });
+}
+function select(ids) { sel = new Set(ids); renderSelection(); renderInspector(); }
+
+/* ───────────────── Seiten ───────────────── */
+function renderPageSel() {
+  const s = $('#pageSel'); s.innerHTML = '';
+  Object.keys(data.pages).forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n + '.html'; s.appendChild(o); });
+  s.value = page;
+}
+function switchPage(n) { page = n; localStorage.setItem('editor.page', n); sel.clear(); renderPageSel(); fit(); }
+function newPage() {
+  let n = prompt('Name der neuen Seite – wird zur Datei name.html.\nNur Kleinbuchstaben, Zahlen und Bindestriche, z. B. „producing“.');
+  if (!n) return; n = n.trim().toLowerCase().replace(/\.html$/, '');
+  if (!/^[a-z0-9-]+$/.test(n)) return toast('Bitte nur a–z, 0–9 und Bindestriche verwenden.');
+  if (['editor', 'impressum', 'datenschutz'].includes(n)) return toast(`„${n}“ ist schon für etwas anderes vergeben.`);
+  if (data.pages[n]) return toast(`Die Seite „${n}“ gibt es schon.`);
+  data.pages[n] = { title: n.charAt(0).toUpperCase() + n.slice(1) + ' — Pascal Ritter', background: P().background || '#000000', height: 3000, items: [] };
+  commit(); switchPage(n);
+  if (n === 'index') toast('Hinweis: Beim Speichern wird gefragt, ob die alte index.html ersetzt werden soll.');
+}
+function deletePage() {
+  if (Object.keys(data.pages).length < 2) return toast('Die letzte Seite kann nicht gelöscht werden.');
+  if (!confirm(`Seite „${page}“ mit allen Elementen löschen?\n(Die Datei ${page}.html bleibt im Ordner liegen – die kannst du in GitHub Desktop/Finder löschen.)`)) return;
+  delete data.pages[page]; commit(); switchPage(Object.keys(data.pages)[0]);
+}
+
+/* ───────────────── Zoom ───────────────── */
+function setZoom(z, anchor) {
+  z = Math.min(2, Math.max(0.1, z));
+  let ux, uy, ax, ay;
+  if (anchor) { const sr = stage.getBoundingClientRect(); ux = (anchor.x - sr.left) / zoom; uy = (anchor.y - sr.top) / zoom; ax = anchor.x; ay = anchor.y; }
+  zoom = z; renderAll();
+  if (anchor) { const sr = stage.getBoundingClientRect(); viewport.scrollLeft += sr.left + ux * zoom - ax; viewport.scrollTop += sr.top + uy * zoom - ay; }
+}
+function fit() { setZoom((viewport.clientWidth - 80) / W()); }
+
+/* ───────────────── Ordner & Dateien ───────────────── */
+async function dirOf(path, create) {
+  const parts = path.split('/'); let d = dir;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create });
+  return [d, parts[parts.length - 1]];
+}
+async function writeFile(path, content) {
+  const [d, name] = await dirOf(path, true);
+  const fh = await d.getFileHandle(name, { create: true });
+  const w = await fh.createWritable(); await w.write(content); await w.close();
+}
+async function readFile(path) { const [d, name] = await dirOf(path, false); return (await d.getFileHandle(name)).getFile(); }
+async function exists(path) { try { await readFile(path); return true; } catch { return false; } }
+
+const IMG = /\.(png|jpe?g|webp|gif|svg|avif)$/i;
+async function scanAssets() {
+  assets = [];
+  let a; try { a = await dir.getDirectoryHandle('assets'); } catch { a = await dir.getDirectoryHandle('assets', { create: true }); }
+  async function walk(h, prefix) {
+    for await (const [name, entry] of h.entries()) {
+      if (name.startsWith('.')) continue;
+      const p = prefix + '/' + name;
+      if (entry.kind === 'directory') await walk(entry, p);
+      else if (IMG.test(name)) {
+        const f = await entry.getFile();
+        if (blobs[p]) URL.revokeObjectURL(blobs[p]);
+        blobs[p] = URL.createObjectURL(f);
+        if (!p.includes('/farbig/')) assets.push(p);
+      }
+    }
+  }
+  await walk(a, 'assets');
+  assets.sort();
+}
+function renderAssets() {
+  const list = $('#assetList'); list.innerHTML = '';
+  if (!window.showDirectoryPicker) {
+    list.insertAdjacentHTML('beforeend', '<p class="note warn">Dieser Browser kann keine Ordner verbinden. Öffne den Editor bitte in <b>Chrome</b> oder <b>Edge</b> – sonst kannst du nur verschieben und die layout.js herunterladen.</p>');
+  }
+  if (!dir) {
+    list.insertAdjacentHTML('beforeend', '<p class="note">Verbinde oben deinen Website-Ordner (den Repo-Ordner aus GitHub Desktop). Dann erscheinen hier alle Bilder aus <b>assets/</b>, und du kannst speichern.</p>');
+    return;
+  }
+  const q = $('#assetSearch').value.trim().toLowerCase();
+  const groups = {};
+  assets.filter(p => !q || p.toLowerCase().includes(q)).forEach(p => {
+    const g = p.split('/').length > 2 ? p.split('/')[1] : 'assets'; (groups[g] = groups[g] || []).push(p);
+  });
+  Object.keys(groups).forEach(g => {
+    const d = document.createElement('details'); d.open = true;
+    d.innerHTML = `<summary>${g} (${groups[g].length})</summary><div class="grid"></div>`;
+    const grid = d.querySelector('.grid');
+    groups[g].forEach(p => {
+      const a = document.createElement('div'); a.className = 'asset'; a.draggable = true; a.title = p + '\nKlicken oder auf die Fläche ziehen';
+      a.innerHTML = `<img loading="lazy" alt=""><span></span>`;
+      a.querySelector('img').src = resolve(p); a.querySelector('span').textContent = p.split('/').pop();
+      a.addEventListener('dragstart', e => { e.dataTransfer.setData('text/x-asset', p); e.dataTransfer.effectAllowed = 'copy'; });
+      a.addEventListener('click', () => { const c = viewCenter(); addImage(p, c.x, c.y); });
+      grid.appendChild(a);
+    });
+    list.appendChild(d);
+  });
+  list.insertAdjacentHTML('beforeend', '<p class="note">Neue Bilder einfach aus dem Finder auf die Fläche ziehen – sie werden verkleinert und in <b>assets/uploads/</b> gespeichert.</p>');
+}
+function updateConnectUI() {
+  const b = $('#btnConnect');
+  b.classList.toggle('ok', !!dir);
+  b.textContent = dir ? '✓ ' + dir.name : savedHandle ? `„${savedHandle.name}“ verbinden` : 'Repo-Ordner verbinden';
+  setDirty(dirty);
+}
+async function connect() {
+  if (!window.showDirectoryPicker) return toast('Ordner verbinden geht nur in Chrome oder Edge.');
+  try {
+    if (savedHandle && !dir) {
+      const perm = await savedHandle.requestPermission({ mode: 'readwrite' });
+      if (perm === 'granted') return useDir(savedHandle);
+    }
+    const h = await window.showDirectoryPicker({ id: 'website-repo', mode: 'readwrite' });
+    await useDir(h);
+  } catch (e) { if (e.name !== 'AbortError') toast('Ordner konnte nicht verbunden werden: ' + e.message); }
+}
+async function useDir(h) {
+  let hasLayout = false, hasEditor = false;
+  try { await h.getFileHandle('layout.js'); hasLayout = true; } catch {}
+  try { await h.getFileHandle('editor.html'); hasEditor = true; } catch {}
+  if (!hasLayout && !hasEditor && !confirm(`Im Ordner „${h.name}“ liegt weder layout.js noch editor.html.\nIst das wirklich dein Website-Ordner?`)) return;
+  dir = h; savedHandle = h; idbSet('dir', h);
+  if (hasLayout && !dirty) {
+    try {
+      const txt = await (await (await h.getFileHandle('layout.js')).getFile()).text();
+      data = parseLayout(txt); lastSnap = JSON.stringify(data); undoStack = []; redoStack = []; updateUndoBtns();
+      if (!data.pages[page]) page = Object.keys(data.pages)[0];
+      sel.clear(); renderPageSel();
+    } catch (e) { toast('layout.js konnte nicht gelesen werden: ' + e.message); }
+  }
+  await scanAssets();
+  updateConnectUI(); renderAssets(); renderAll();
+  toast('Verbunden mit „' + h.name + '“');
+}
+function parseLayout(txt) { return JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1)); }
+function layoutText() { return 'window.LAYOUT = ' + JSON.stringify(data, null, 1) + ';\n'; }
+function stubHtml(n) {
+  return `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pascal Ritter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="canvas.css">
+</head>
+<body data-page="${n}">
+  <script src="layout.js"><\/script>
+  <script src="render.js"><\/script>
+</body>
+</html>
+`;
+}
+async function save() {
+  measureText();
+  if (!dir) {
+    if (window.showDirectoryPicker) { await connect(); if (!dir) return; }
+    else { // Fallback: herunterladen
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([layoutText()], { type: 'text/javascript' }));
+      a.download = 'layout.js'; a.click(); setDirty(false);
+      return toast('layout.js heruntergeladen – in den Website-Ordner legen und alte Datei ersetzen.');
+    }
+  }
+  try {
+    await writeFile('layout.js', layoutText());
+    const created = [];
+    for (const n of Object.keys(data.pages)) {
+      const f = n + '.html';
+      if (await exists(f)) {
+        const txt = await (await readFile(f)).text();
+        if (txt.includes('render.js')) continue;
+        if (!confirm(`${f} ist noch eine Seite vom alten Design.\nDurch die Editor-Version ersetzen?`)) continue;
+      }
+      await writeFile(f, stubHtml(n)); created.push(f);
+    }
+    setDirty(false);
+    toast('Gespeichert' + (created.length ? ' (neu: ' + created.join(', ') + ')' : '') + '. Jetzt in GitHub Desktop committen.');
+  } catch (e) { toast('Speichern fehlgeschlagen: ' + e.message); }
+}
+async function preview() {
+  if (dirty && dir) await save();
+  else if (dirty) toast('Achtung: Vorschau zeigt den zuletzt gespeicherten Stand.');
+  window.open(page + '.html', '_blank');
+}
+
+/* Bilder aus dem Finder übernehmen */
+function slug(s) {
+  return s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+async function importFile(file) {
+  if (!dir) { toast('Erst den Repo-Ordner verbinden – dann können Bilder hineinkopiert werden.'); return null; }
+  let base = slug(file.name.replace(/\.[^.]+$/, '')) || 'bild';
+  let ext = (file.name.match(/\.[^.]+$/) || ['.png'])[0].toLowerCase();
+  let blob = file;
+  if (/image\/(jpeg|png|webp)/.test(file.type)) {
+    const bmp = await createImageBitmap(file); const max = 2400;
+    const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    if (s < 1 || file.size > 1.5e6) {
+      const c = new OffscreenCanvas(Math.round(bmp.width * s), Math.round(bmp.height * s));
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (file.type === 'image/png') blob = await c.convertToBlob({ type: 'image/png' });
+      else { blob = await c.convertToBlob({ type: 'image/jpeg', quality: 0.84 }); ext = '.jpg'; }
+    }
+  }
+  let path = `assets/uploads/${base}${ext}`, i = 2;
+  while (await exists(path)) path = `assets/uploads/${base}-${i++}${ext}`;
+  await writeFile(path, blob);
+  blobs[path] = URL.createObjectURL(blob); assets.push(path); assets.sort(); renderAssets();
+  return path;
+}
+
+/* Einfärben: erzeugt eine farbige Kopie der PNG (nur Pixel mit Transparenz sinnvoll) */
+async function setTint(it, color) {
+  if (!color) {
+    if (it.srcOriginal) it.src = it.srcOriginal;
+    delete it.srcOriginal; delete it.tint; commit(); refreshItem(it); renderInspector(); return;
+  }
+  if (!dir) return toast('Zum Einfärben erst den Repo-Ordner verbinden.');
+  const orig = it.srcOriginal || it.src, hex = color.replace('#', '').toLowerCase();
+  const folder = orig.slice(0, orig.lastIndexOf('/')), base = orig.split('/').pop().replace(/\.[^.]+$/, '');
+  const out = `${folder}/farbig/${base}-${hex}.png`;
+  try {
+    if (!blobs[out]) {
+      const bmp = await createImageBitmap(await readFile(orig));
+      const c = new OffscreenCanvas(bmp.width, bmp.height), x = c.getContext('2d');
+      x.drawImage(bmp, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#' + hex; x.fillRect(0, 0, c.width, c.height);
+      const blob = await c.convertToBlob({ type: 'image/png' });
+      await writeFile(out, blob); blobs[out] = URL.createObjectURL(blob);
+    }
+    it.srcOriginal = orig; it.src = out; it.tint = '#' + hex;
+    commit(); refreshItem(it); renderInspector();
+  } catch (e) { toast('Einfärben fehlgeschlagen: ' + e.message); }
+}
+
+/* ───────────────── Elemente anlegen ───────────────── */
+function viewCenter() {
+  const vr = viewport.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  return { x: (vr.left + vr.width / 2 - sr.left) / zoom, y: (vr.top + vr.height / 2 - sr.top) / zoom };
+}
+function altFrom(p) {
+  if (!p.includes('/lettering/')) return '';
+  return p.split('/').pop().replace(/\.[^.]+$/, '').replace(/-/g, ' ')
+    .replace(/ue/g, 'ü').replace(/ae/g, 'ä').replace(/oe/g, 'ö');
+}
+async function addImage(p, cx, cy) {
+  const img = new Image(); img.src = resolve(p);
+  try { await img.decode(); } catch { return toast('Bild konnte nicht geladen werden.'); }
+  natural[p] = { w: img.naturalWidth, h: img.naturalHeight };
+  const w = Math.min(p.includes('/lettering/') ? 500 : 800, img.naturalWidth);
+  const h = r1(w * img.naturalHeight / img.naturalWidth);
+  const it = { id: uid(), type: 'image', src: p, x: r1(cx - w / 2), y: r1(cy - h / 2), w, h, rot: 0, opacity: 1, radius: 0,
+    pos: '50% 50%', link: '', newTab: false, alt: altFrom(p) };
+  P().items.push(it); sel = new Set([it.id]); commit(); renderAll();
+}
+function addText() {
+  const c = viewCenter();
+  const it = { id: uid(), type: 'text', text: 'Text', size: 36, color: '#e2e2d8', weight: 400, align: 'left',
+    x: r1(c.x - 200), y: r1(c.y - 24), w: 400, h: 48, rot: 0, opacity: 1, link: '', newTab: false };
+  P().items.push(it); sel = new Set([it.id]); commit(); renderAll();
+  setTimeout(() => { const t = insp.querySelector('textarea'); if (t) { t.focus(); t.select(); } }, 0);
+}
+function removeSel() { if (!sel.size) return; P().items = P().items.filter(i => !sel.has(i.id)); sel.clear(); commit(); renderAll(); }
+function copySel() { clip = P().items.filter(i => sel.has(i.id)).map(i => JSON.parse(JSON.stringify(i))); if (clip.length) toast(clip.length + ' kopiert'); }
+function paste(offset) {
+  if (!clip || !clip.length) return;
+  const ids = [];
+  clip.forEach(c => {
+    const it = JSON.parse(JSON.stringify(c)); it.id = uid();
+    const clash = P().items.some(o => o.x === it.x && o.y === it.y);
+    if (offset || clash) { it.x += 20; it.y += 20; }
+    P().items.push(it); ids.push(it.id);
+  });
+  sel = new Set(ids); commit(); renderAll();
+}
+function duplicate() { copySel(); paste(true); }
+function layer(d) {
+  let items = P().items;
+  if (d === 'front') items = items.filter(i => !sel.has(i.id)).concat(items.filter(i => sel.has(i.id)));
+  else if (d === 'back') items = items.filter(i => sel.has(i.id)).concat(items.filter(i => !sel.has(i.id)));
+  else if (d > 0) { for (let i = items.length - 2; i >= 0; i--) if (sel.has(items[i].id) && !sel.has(items[i + 1].id)) [items[i], items[i + 1]] = [items[i + 1], items[i]]; }
+  else { for (let i = 1; i < items.length; i++) if (sel.has(items[i].id) && !sel.has(items[i - 1].id)) [items[i], items[i - 1]] = [items[i - 1], items[i]]; }
+  P().items = items; commit(); renderAll();
+}
+function bbox(its) {
+  const x = Math.min(...its.map(i => i.x)), y = Math.min(...its.map(i => i.y));
+  return { x, y, w: Math.max(...its.map(i => i.x + i.w)) - x, h: Math.max(...its.map(i => i.y + i.h)) - y };
+}
+function align(m) {
+  const its = [...sel].map(byId); if (!its.length) return; const b = bbox(its);
+  if (m === 'page') { const dx = r1(W() / 2 - (b.x + b.w / 2)); its.forEach(i => i.x += dx); }
+  else if (m === 'dv' && its.length > 2) {
+    its.sort((a, c) => a.y - c.y); const gap = (b.h - its.reduce((s, i) => s + i.h, 0)) / (its.length - 1); let y = b.y;
+    its.forEach(i => { i.y = r1(y); y += i.h + gap; });
+  }
+  else its.forEach(i => {
+    if (m === 'l') i.x = b.x; if (m === 'c') i.x = r1(b.x + b.w / 2 - i.w / 2); if (m === 'r') i.x = b.x + b.w - i.w;
+    if (m === 't') i.y = b.y; if (m === 'm') i.y = r1(b.y + b.h / 2 - i.h / 2); if (m === 'b') i.y = b.y + b.h - i.h;
+  });
+  commit(); renderAll();
+}
+function isCropped(it) { const n = natural[it.src]; return !!n && Math.abs(it.h - it.w * n.h / n.w) > Math.max(2, it.h * 0.015); }
+function resetRatio(it) { const n = natural[it.src]; if (!n) return; it.h = r1(it.w * n.h / n.w); it.pos = '50% 50%'; commit(); refreshItem(it); renderInspector(); }
+
+/* ───────────────── Zuschneiden (wie Freeform: Rahmen über dem ganzen Bild ziehen) ───────────────── */
+const cropModal = $('#cropModal'), cropStage = $('#cropStage'), cropImgEl = $('#cropImg'), cropFrameEl = $('#cropFrame'), cropWrap = $('#cropWrap');
+let cropItem = null, cropBase = '', cropNat = { w: 0, h: 0 }, cropScale = 1, cropRect = { x: 0, y: 0, w: 0, h: 0 }, cropDrag = null;
+
+async function cropFileFor(path) {
+  if (natural[path]) return natural[path];
+  const bmp = await createImageBitmap(await readFile(path));
+  return { w: bmp.width, h: bmp.height };
+}
+async function openCrop(item) {
+  if (!dir) return toast('Zum Zuschneiden erst den Repo-Ordner verbinden.');
+  cropItem = item;
+  cropBase = item.cropBase || item.srcOriginal || item.src;
+  try { cropNat = await cropFileFor(cropBase); } catch (e) { return toast('Bild konnte nicht geladen werden: ' + e.message); }
+  cropRect = item.cropRect && item.cropBase === cropBase
+    ? { ...item.cropRect }
+    : { x: 0, y: 0, w: cropNat.w, h: cropNat.h };
+  $('#cropTitle').textContent = 'Zuschneiden — ' + cropBase.split('/').pop();
+  cropImgEl.src = resolve(cropBase);
+  cropModal.classList.add('open');
+  cropFit();
+}
+function cropFit() {
+  const avail = { w: cropWrap.clientWidth - 40, h: cropWrap.clientHeight - 40 };
+  cropScale = Math.min(4, avail.w / cropNat.w, avail.h / cropNat.h);
+  cropStage.style.width = Math.round(cropNat.w * cropScale) + 'px';
+  cropStage.style.height = Math.round(cropNat.h * cropScale) + 'px';
+  cropDrawFrame();
+}
+function cropDrawFrame() {
+  const s = cropFrameEl.style;
+  s.left = cropRect.x * cropScale + 'px'; s.top = cropRect.y * cropScale + 'px';
+  s.width = cropRect.w * cropScale + 'px'; s.height = cropRect.h * cropScale + 'px';
+}
+function cropClamp() {
+  cropRect.w = Math.min(cropNat.w, Math.max(16, cropRect.w));
+  cropRect.h = Math.min(cropNat.h, Math.max(16, cropRect.h));
+  cropRect.x = Math.min(Math.max(0, cropRect.x), cropNat.w - cropRect.w);
+  cropRect.y = Math.min(Math.max(0, cropRect.y), cropNat.h - cropRect.h);
+}
+cropFrameEl.addEventListener('pointerdown', e => {
+  const h = e.target.closest('.crop-h');
+  cropFrameEl.setPointerCapture(e.pointerId);
+  cropDrag = { h: h ? h.dataset.h : 'move', sx: e.clientX, sy: e.clientY, r0: { ...cropRect }, shift: e.shiftKey };
+  e.stopPropagation(); e.preventDefault();
+});
+cropFrameEl.addEventListener('pointermove', e => {
+  if (!cropDrag) return;
+  const dx = (e.clientX - cropDrag.sx) / cropScale, dy = (e.clientY - cropDrag.sy) / cropScale;
+  const r0 = cropDrag.r0, h = cropDrag.h;
+  if (h === 'move') {
+    cropRect.x = r0.x + dx; cropRect.y = r0.y + dy; cropRect.w = r0.w; cropRect.h = r0.h;
+  } else {
+    const sxn = h.includes('e') ? 1 : h.includes('w') ? -1 : 0, syn = h.includes('s') ? 1 : h.includes('n') ? -1 : 0;
+    let x1 = r0.x, y1 = r0.y, w1 = r0.w, h1 = r0.h;
+    if (sxn > 0) w1 = r0.w + dx; else if (sxn < 0) { x1 = r0.x + dx; w1 = r0.w - dx; }
+    if (syn > 0) h1 = r0.h + dy; else if (syn < 0) { y1 = r0.y + dy; h1 = r0.h - dy; }
+    if (e.shiftKey && sxn && syn) { const ratio = r0.w / r0.h; h1 = w1 / ratio; if (syn < 0) y1 = r0.y + r0.h - h1; }
+    cropRect = { x: x1, y: y1, w: w1, h: h1 };
+  }
+  cropClamp(); cropDrawFrame();
+});
+function cropEndDrag() { cropDrag = null; }
+cropFrameEl.addEventListener('pointerup', cropEndDrag); cropFrameEl.addEventListener('pointercancel', cropEndDrag);
+window.addEventListener('resize', () => { if (cropModal.classList.contains('open')) cropFit(); });
+$('#cropReset').onclick = () => { cropRect = { x: 0, y: 0, w: cropNat.w, h: cropNat.h }; cropDrawFrame(); };
+$('#cropCancel').onclick = () => { cropModal.classList.remove('open'); cropItem = null; };
+$('#cropApply').onclick = async () => {
+  if (!cropItem) return;
+  const it = cropItem, rect = { x: r1(cropRect.x), y: r1(cropRect.y), w: Math.max(1, r1(cropRect.w)), h: Math.max(1, r1(cropRect.h)) };
+  const folder = cropBase.slice(0, cropBase.lastIndexOf('/')), baseName = cropBase.split('/').pop().replace(/\.[^.]+$/, '');
+  try {
+    const croppedOrig = await cropAndWrite(cropBase, rect, `${folder}/crops/${baseName}-${it.id}.png`);
+    let finalSrc = croppedOrig;
+    if (it.tint) { finalSrc = await tintFile(croppedOrig, it.tint.replace('#', ''), `${folder}/crops/${baseName}-${it.id}-${it.tint.replace('#', '')}.png`); it.srcOriginal = croppedOrig; }
+    else delete it.srcOriginal;
+    it.src = finalSrc; it.cropBase = cropBase; it.cropRect = rect;
+    it.h = r1(it.w * rect.h / rect.w);
+    delete it.pos;
+    cropModal.classList.remove('open'); cropItem = null;
+    commit(); refreshItem(it); renderInspector(); toast('Zugeschnitten.');
+  } catch (e) { toast('Zuschneiden fehlgeschlagen: ' + e.message); }
+};
+async function cropAndWrite(srcPath, rect, outPath) {
+  const bmp = await createImageBitmap(await readFile(srcPath));
+  const c = new OffscreenCanvas(rect.w, rect.h), x = c.getContext('2d');
+  x.drawImage(bmp, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+  const blob = await c.convertToBlob({ type: 'image/png' });
+  await writeFile(outPath, blob);
+  if (blobs[outPath]) URL.revokeObjectURL(blobs[outPath]);
+  blobs[outPath] = URL.createObjectURL(blob);
+  natural[outPath] = { w: rect.w, h: rect.h };
+  if (!assets.includes(outPath)) { assets.push(outPath); assets.sort(); renderAssets(); }
+  return outPath;
+}
+async function tintFile(srcPath, hex, outPath) {
+  const bmp = await createImageBitmap(await readFile(srcPath));
+  const c = new OffscreenCanvas(bmp.width, bmp.height), x = c.getContext('2d');
+  x.drawImage(bmp, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#' + hex; x.fillRect(0, 0, c.width, c.height);
+  const blob = await c.convertToBlob({ type: 'image/png' });
+  await writeFile(outPath, blob);
+  if (blobs[outPath]) URL.revokeObjectURL(blobs[outPath]);
+  blobs[outPath] = URL.createObjectURL(blob);
+  natural[outPath] = { w: bmp.width, h: bmp.height };
+  if (!assets.includes(outPath)) { assets.push(outPath); assets.sort(); renderAssets(); }
+  return outPath;
+}
+
+/* ───────────────── Zeichnen: Pinsel, Spray, Radiergummi ───────────────── */
+const drawModal = $('#drawModal'), drawCanvas = $('#drawCanvas'), drawWrap = $('#drawCanvasWrap');
+const drawCtx = drawCanvas.getContext('2d', { willReadFrequently: true });
+let drawTool = 'brush', drawColor = '#AE0315', drawSize = 18;
+let drawUndoStack = [], drawActive = false, drawLast = null, drawEditing = null, drawOffset = { x: 0, y: 0 };
+
+function drawPos(e) {
+  const r = drawCanvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (drawCanvas.width / r.width), y: (e.clientY - r.top) * (drawCanvas.height / r.height) };
+}
+function drawFit() {
+  const s = Math.min(1, (drawWrap.clientWidth - 24) / drawCanvas.width, (drawWrap.clientHeight - 24) / drawCanvas.height);
+  drawCanvas.style.width = Math.round(drawCanvas.width * s) + 'px';
+  drawCanvas.style.height = Math.round(drawCanvas.height * s) + 'px';
+}
+function drawPushUndo() {
+  try { drawUndoStack.push(drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height)); if (drawUndoStack.length > 25) drawUndoStack.shift(); } catch {}
+}
+function drawPopUndo() { const d = drawUndoStack.pop(); if (d) drawCtx.putImageData(d, 0, 0); }
+
+function sprayDab(x, y) {
+  for (let i = 0; i < 10; i++) {
+    const a = Math.random() * Math.PI * 2, r = Math.random() * drawSize, dotR = Math.random() * 1.4 + 0.3;
+    drawCtx.globalAlpha = 0.22 + Math.random() * 0.35;
+    drawCtx.beginPath(); drawCtx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, dotR, 0, Math.PI * 2); drawCtx.fill();
+  }
+  drawCtx.globalAlpha = 1;
+}
+function drawSegment(a, b) {
+  drawCtx.fillStyle = drawColor; drawCtx.strokeStyle = drawColor;
+  drawCtx.globalCompositeOperation = drawTool === 'eraser' ? 'destination-out' : 'source-over';
+  if (drawTool === 'spray') {
+    const dist = Math.hypot(b.x - a.x, b.y - a.y), steps = Math.max(1, Math.round(dist / 4));
+    for (let i = 0; i <= steps; i++) sprayDab(a.x + (b.x - a.x) * i / steps, a.y + (b.y - a.y) * i / steps);
+  } else {
+    drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round'; drawCtx.lineWidth = drawSize;
+    drawCtx.beginPath(); drawCtx.moveTo(a.x, a.y); drawCtx.lineTo(b.x, b.y); drawCtx.stroke();
+  }
+  drawCtx.globalCompositeOperation = 'source-over';
+}
+drawCanvas.addEventListener('pointerdown', e => {
+  drawCanvas.setPointerCapture(e.pointerId); drawPushUndo(); drawActive = true;
+  drawLast = drawPos(e); drawSegment(drawLast, drawLast);
+});
+drawCanvas.addEventListener('pointermove', e => { if (!drawActive) return; const p = drawPos(e); drawSegment(drawLast, p); drawLast = p; });
+function drawEnd() { drawActive = false; }
+drawCanvas.addEventListener('pointerup', drawEnd); drawCanvas.addEventListener('pointercancel', drawEnd);
+
+function openDraw(item) {
+  drawEditing = item || null; drawUndoStack = []; drawTool = 'brush'; drawSize = 18;
+  document.querySelectorAll('.draw-tools button').forEach(b => b.classList.toggle('on', b.dataset.tool === 'brush'));
+  $('#drawSizeInput').value = 18; $('#drawSizeVal').textContent = 18;
+  const go = img => {
+    if (item && img) {
+      const m = 160; drawOffset = { x: m, y: m };
+      drawCanvas.width = img.naturalWidth + m * 2; drawCanvas.height = img.naturalHeight + m * 2;
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height); drawCtx.drawImage(img, m, m);
+    } else {
+      drawOffset = { x: 0, y: 0 }; drawCanvas.width = 1300; drawCanvas.height = 820;
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    }
+    drawPushUndo();
+    drawModal.classList.add('open'); drawFit();
+  };
+  if (item) { const img = new Image(); img.onload = () => go(img); img.onerror = () => { toast('Zeichnung konnte nicht geladen werden.'); go(null); }; img.src = resolve(item.src); }
+  else go(null);
+}
+function closeDraw() {
+  if (drawUndoStack.length > 1 && !confirm('Zeichnung verwerfen?')) return;
+  drawModal.classList.remove('open'); drawEditing = null;
+}
+async function insertDrawing() {
+  if (!dir) return toast('Bitte zuerst den Repo-Ordner verbinden.');
+  const imgData = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height).data;
+  let minX = drawCanvas.width, minY = drawCanvas.height, maxX = -1, maxY = -1;
+  for (let y = 0; y < drawCanvas.height; y++) {
+    for (let x = 0; x < drawCanvas.width; x++) {
+      if (imgData[(y * drawCanvas.width + x) * 4 + 3] > 10) {
+        if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return toast('Noch nichts gezeichnet.');
+  const pad = 4;
+  minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+  maxX = Math.min(drawCanvas.width - 1, maxX + pad); maxY = Math.min(drawCanvas.height - 1, maxY + pad);
+  const bw = maxX - minX + 1, bh = maxY - minY + 1;
+  const crop = new OffscreenCanvas(bw, bh);
+  crop.getContext('2d').drawImage(drawCanvas, minX, minY, bw, bh, 0, 0, bw, bh);
+  const blob = await crop.convertToBlob({ type: 'image/png' });
+  const editing = drawEditing;
+  let path;
+  if (editing) path = editing.src;
+  else { const base = 'assets/uploads/zeichnung-' + Date.now(); let i = 2; path = base + '.png'; while (await exists(path)) path = base + '-' + (i++) + '.png'; }
+  try { await writeFile(path, blob); } catch (e) { return toast('Konnte nicht gespeichert werden: ' + e.message); }
+  if (blobs[path]) URL.revokeObjectURL(blobs[path]);
+  blobs[path] = URL.createObjectURL(blob);
+  if (!assets.includes(path)) { assets.push(path); assets.sort(); renderAssets(); }
+  if (editing) {
+    editing.x = r1(editing.x - drawOffset.x + minX); editing.y = r1(editing.y - drawOffset.y + minY);
+    editing.w = bw; editing.h = bh; refreshItem(editing);
+  } else {
+    const c = viewCenter();
+    const it = { id: uid(), type: 'image', src: path, x: r1(c.x - bw / 2), y: r1(c.y - bh / 2), w: bw, h: bh,
+      rot: 0, opacity: 1, radius: 0, pos: '50% 50%', link: '', newTab: false, alt: '', drawing: true };
+    P().items.push(it); sel = new Set([it.id]);
+  }
+  drawEditing = null; drawModal.classList.remove('open'); commit(); renderAll();
+  toast(editing ? 'Zeichnung aktualisiert.' : 'Zeichnung eingefügt.');
+}
+document.querySelectorAll('.draw-tools button').forEach(b => b.onclick = () => {
+  drawTool = b.dataset.tool; document.querySelectorAll('.draw-tools button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('#drawSizeInput').oninput = e => { drawSize = +e.target.value; $('#drawSizeVal').textContent = drawSize; };
+document.querySelectorAll('.draw-colors .sw').forEach(b => b.onclick = () => { drawColor = b.dataset.color; $('#drawColorCustom').value = b.dataset.color; });
+$('#drawColorCustom').oninput = e => { drawColor = e.target.value; };
+$('#drawUndo').onclick = drawPopUndo;
+$('#drawClear').onclick = () => { drawPushUndo(); drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height); };
+$('#drawCancel').onclick = closeDraw;
+$('#drawInsert').onclick = insertDrawing;
+window.addEventListener('resize', () => { if (drawModal.classList.contains('open')) drawFit(); });
+
+/* ───────────────── Maus: verschieben, skalieren, drehen ───────────────── */
+let drag = null;
+function unitPos(e) { const r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom }; }
+function snapTargets() {
+  const xs = [0, W() / 2, W()], ys = [0, P().height / 2];
+  P().items.forEach(i => { if (sel.has(i.id)) return; xs.push(i.x, i.x + i.w / 2, i.x + i.w); ys.push(i.y, i.y + i.h / 2, i.y + i.h); });
+  return { xs, ys };
+}
+function bestSnap(vals, targets, thr) {
+  let best = null;
+  vals.forEach(v => targets.forEach(t => { const d = t - v; if (Math.abs(d) <= thr && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, t }; }));
+  return best;
+}
+function drawGuides(gx, gy) {
+  overlay.querySelectorAll('.guide').forEach(g => g.remove());
+  if (gx != null) overlay.insertAdjacentHTML('beforeend', `<div class="guide" style="left:${gx * zoom}px;top:0;width:1px;height:100%"></div>`);
+  if (gy != null) overlay.insertAdjacentHTML('beforeend', `<div class="guide" style="top:${gy * zoom}px;left:0;height:1px;width:100%"></div>`);
+}
+stage.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  if (e.target.id === 'heightHandle') {
+    drag = { mode: 'height', sy: e.clientY, h0: P().height }; stage.setPointerCapture(e.pointerId); return;
+  }
+  const u = unitPos(e);
+  const h = e.target.closest('.h');
+  if (h) {
+    const it = byId([...sel][0]);
+    drag = { mode: h.dataset.h === 'rot' ? 'rot' : 'resize', h: h.dataset.h, it, start: { ...it }, sx: e.clientX, sy: e.clientY };
+  } else {
+    const el = e.altKey ? null : e.target.closest('.item');   // ⌥ = immer Auswahlrahmen
+    if (el) {
+      const id = el.dataset.id;
+      if (e.shiftKey) { sel.has(id) ? sel.delete(id) : sel.add(id); select([...sel]); if (!sel.has(id)) return; }
+      else if (!sel.has(id)) select([id]);
+      const starts = {}; sel.forEach(i => { const it = byId(i); starts[i] = { x: it.x, y: it.y }; });
+      drag = { mode: 'move', sx: e.clientX, sy: e.clientY, starts, targets: snapTargets(), moved: false };
+    } else {
+      if (!e.shiftKey) select([]);
+      drag = { mode: 'marquee', u0: u, base: new Set(sel) };
+    }
+  }
+  stage.setPointerCapture(e.pointerId); e.preventDefault();
+});
+stage.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const noSnap = e.metaKey || e.ctrlKey;
+  if (drag.mode === 'height') {
+    P().height = Math.max(400, r1(drag.h0 + (e.clientY - drag.sy) / zoom));
+    stage.style.height = P().height * zoom + 'px'; $('#heightHandle').textContent = P().height + ' hoch';
+  } else if (drag.mode === 'move') {
+    let dx = (e.clientX - drag.sx) / zoom, dy = (e.clientY - drag.sy) / zoom;
+    if (!drag.moved && Math.hypot(dx, dy) * zoom < 3) return;
+    drag.moved = true;
+    if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
+    const its = [...sel].map(byId);
+    const b0 = bbox(its.map(i => ({ ...i, ...drag.starts[i.id] })));
+    let gx = null, gy = null;
+    if (!noSnap) {
+      const thr = 6 / zoom;
+      const sx = bestSnap([b0.x + dx, b0.x + b0.w / 2 + dx, b0.x + b0.w + dx], drag.targets.xs, thr);
+      const sy = bestSnap([b0.y + dy, b0.y + b0.h / 2 + dy, b0.y + b0.h + dy], drag.targets.ys, thr);
+      if (sx) { dx += sx.d; gx = sx.t; } if (sy) { dy += sy.d; gy = sy.t; }
+    }
+    its.forEach(it => { it.x = r1(drag.starts[it.id].x + dx); it.y = r1(drag.starts[it.id].y + dy); applyGeom(elOf(it.id), it); });
+    drawGuides(gx, gy); liveInspector();
+  } else if (drag.mode === 'resize') {
+    const { it, start: s, h } = drag;
+    const a = -(s.rot || 0) * Math.PI / 180;
+    const gdx = (e.clientX - drag.sx) / zoom, gdy = (e.clientY - drag.sy) / zoom;
+    const ldx = gdx * Math.cos(a) - gdy * Math.sin(a), ldy = gdx * Math.sin(a) + gdy * Math.cos(a);
+    const sxn = h.includes('e') ? 1 : h.includes('w') ? -1 : 0, syn = h.includes('s') ? 1 : h.includes('n') ? -1 : 0;
+    let w1 = s.w, h1 = s.h;
+    if (sxn && syn) { // Ecke: proportional
+      const k = Math.max(0.02, ((s.w + sxn * ldx) / s.w + (s.h + syn * ldy) / s.h) / 2);
+      w1 = Math.max(10, s.w * k); h1 = w1 * s.h / s.w;
+      if (it.type === 'text') it.size = Math.max(4, Math.round(s.size * w1 / s.w * 10) / 10);
+    } else if (sxn) w1 = Math.max(10, s.w + sxn * ldx);
+    else h1 = Math.max(10, s.h + syn * ldy);
+    // Gegenüberliegende Kante bleibt stehen (auch bei Drehung)
+    const ox = sxn ? -sxn * s.w / 2 + sxn * w1 / 2 : 0, oy = syn ? -syn * s.h / 2 + syn * h1 / 2 : 0;
+    const r = (s.rot || 0) * Math.PI / 180;
+    const cx = s.x + s.w / 2 + ox * Math.cos(r) - oy * Math.sin(r), cy = s.y + s.h / 2 + ox * Math.sin(r) + oy * Math.cos(r);
+    it.w = r1(w1); if (it.type !== 'text') it.h = r1(h1);
+    it.x = r1(cx - w1 / 2); it.y = r1(cy - h1 / 2);
+    const el = elOf(it.id); applyGeom(el, it); if (it.type === 'text') it.h = r1(el.offsetHeight / zoom);
+    liveInspector();
+  } else if (drag.mode === 'rot') {
+    const it = drag.it, sr = stage.getBoundingClientRect();
+    const cx = sr.left + (it.x + it.w / 2) * zoom, cy = sr.top + (it.y + it.h / 2) * zoom;
+    let ang = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
+    if (ang > 180) ang -= 360;
+    if (e.shiftKey) ang = Math.round(ang / 15) * 15;
+    else if (!noSnap && Math.abs(ang - Math.round(ang / 90) * 90) < 3) ang = Math.round(ang / 90) * 90;
+    it.rot = Math.round(ang * 10) / 10; applyGeom(elOf(it.id), it); liveInspector();
+  } else if (drag.mode === 'marquee') {
+    const u = unitPos(e), a = drag.u0;
+    const x = Math.min(a.x, u.x), y = Math.min(a.y, u.y), w = Math.abs(u.x - a.x), h = Math.abs(u.y - a.y);
+    let m = overlay.querySelector('.marquee');
+    if (!m) { m = document.createElement('div'); m.className = 'marquee'; overlay.appendChild(m); }
+    Object.assign(m.style, { left: x * zoom + 'px', top: y * zoom + 'px', width: w * zoom + 'px', height: h * zoom + 'px' });
+    const hit = P().items.filter(i => i.x >= x && i.x + i.w <= x + w && i.y >= y && i.y + i.h <= y + h).map(i => i.id);
+    sel = new Set([...drag.base, ...hit]); renderSelection();
+  }
+});
+function endDrag() {
+  if (!drag) return;
+  const d = drag; drag = null;
+  overlay.innerHTML = '';
+  if (d.mode === 'marquee') renderInspector();
+  else if (d.mode !== 'move' || d.moved) { commit(); renderSelection(); renderInspector(); }
+  if (d.mode === 'height') $('#heightHandle').textContent = P().height + ' hoch';
+}
+stage.addEventListener('pointerup', endDrag);
+stage.addEventListener('pointercancel', endDrag);
+stage.addEventListener('dblclick', e => {
+  const el = e.target.closest('.item.text'); if (!el) return;
+  const t = insp.querySelector('textarea'); if (t) { t.focus(); t.select(); }
+});
+
+viewport.addEventListener('wheel', e => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault(); setZoom(zoom * Math.exp(-e.deltaY * 0.01), { x: e.clientX, y: e.clientY });
+}, { passive: false });
+
+/* Drag & Drop: Bilder aus der Leiste oder dem Finder */
+viewport.addEventListener('dragover', e => { e.preventDefault(); viewport.classList.add('drop'); });
+viewport.addEventListener('dragleave', e => { if (e.target === viewport) viewport.classList.remove('drop'); });
+viewport.addEventListener('drop', async e => {
+  e.preventDefault(); viewport.classList.remove('drop');
+  const u = unitPos(e);
+  const p = e.dataTransfer.getData('text/x-asset');
+  if (p) return addImage(p, u.x, u.y);
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  for (const [k, f] of files.entries()) { const path = await importFile(f); if (path) await addImage(path, u.x + k * 40, u.y + k * 40); }
+});
+
+/* ───────────────── Tastatur ───────────────── */
+let nudging = false;
+document.addEventListener('keydown', e => {
+  if (cropModal.classList.contains('open')) {
+    if (e.key === 'Escape') { e.preventDefault(); $('#cropCancel').click(); }
+    else if (e.key === 'Enter') { e.preventDefault(); $('#cropApply').click(); }
+    return;
+  }
+  if (drawModal.classList.contains('open')) {
+    if (e.key === 'Escape') { e.preventDefault(); closeDraw(); }
+    else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); drawPopUndo(); }
+    return;
+  }
+  const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+  if (mod && k === 's') { e.preventDefault(); save(); return; }
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (typing) { if (e.key === 'Escape') document.activeElement.blur(); return; }
+  if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+  if (mod && k === 'c') { copySel(); return; }
+  if (mod && k === 'v') { e.preventDefault(); paste(false); return; }
+  if (mod && k === 'd') { e.preventDefault(); duplicate(); return; }
+  if (mod && k === 'a') { e.preventDefault(); select(P().items.map(i => i.id)); return; }
+  if (mod && k === '0') { e.preventDefault(); fit(); return; }
+  if (mod && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); layer(e.shiftKey ? (e.key === 'ArrowUp' ? 'front' : 'back') : (e.key === 'ArrowUp' ? 1 : -1)); return; }
+  if (e.key === 'Escape') { select([]); return; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel.size) { e.preventDefault(); removeSel(); return; }
+  const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  if (arrows[e.key] && sel.size) {
+    e.preventDefault(); const st = e.shiftKey ? 10 : 1;
+    sel.forEach(id => { const it = byId(id); it.x += arrows[e.key][0] * st; it.y += arrows[e.key][1] * st; applyGeom(elOf(id), it); });
+    nudging = true; liveInspector();
+  }
+});
+document.addEventListener('keyup', e => { if (nudging && e.key.startsWith('Arrow')) { nudging = false; commit(); } });
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ───────────────── Eigenschaften-Panel ───────────────── */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function num(label, k, v, extra = '') { return `<label class="f">${label}<input type="number" data-k="${k}" value="${v}" ${extra}></label>`; }
+function linkFields(it) {
+  const opts = Object.keys(data.pages).map(n => `<option value="${n}.html">${n}.html</option>`).join('');
+  return `<div class="sec"><div class="t">Link</div>
+    <label class="f"><input type="text" data-k="link" value="${esc(it.link)}" placeholder="https://… oder theater.html"></label>
+    <div class="row" style="margin-top:6px"><select data-act="pickpage"><option value="">Eigene Seite …</option>${opts}<option value="mailto:pascal.ritter@gmx.net">E-Mail</option></select>
+    <label class="check"><input type="checkbox" data-k="newTab" ${it.newTab ? 'checked' : ''}> Neuer Tab</label></div></div>`;
+}
+function renderInspector() {
+  if (drag) return;
+  const its = [...sel].map(byId).filter(Boolean);
+  if (!its.length) {
+    const p = P();
+    insp.innerHTML = `<h3>${page}.html</h3><div class="sub">Seiteneinstellungen</div>
+      <div class="sec"><label class="f">Titel im Browser-Tab<input type="text" data-p="title" value="${esc(p.title)}"></label>
+      <div class="row" style="margin-top:6px"><label class="f">Hintergrund<input type="color" data-p="background" value="${p.background || '#000000'}"></label>
+      ${`<label class="f">Länge<input type="number" data-p="height" value="${p.height}" min="400" step="10"></label>`}</div></div>
+      <div class="sec"><div class="t">Navigation (auf jeder Seite oben)</div>
+      <label class="f">Linktext<input type="text" data-p="navLabel" placeholder="${page.charAt(0).toUpperCase() + page.slice(1)}" value="${esc(p.navLabel || '')}"></label>
+      <label class="check"><input type="checkbox" data-p="showInNav" ${p.showInNav === false ? '' : 'checked'}> In der Navigation zeigen</label></div>
+      <div class="sec"><div class="btns"><button data-act="delpage" class="danger">Seite löschen</button></div></div>
+      <div class="sec"><div class="t">Kurzbefehle</div><div class="keys">
+        <span><kbd>⇧</kbd>+Klick</span><span>Mehrere auswählen</span>
+        <span><kbd>⌥</kbd>+Ziehen</span><span>Auswahlrahmen, auch über Fotos</span>
+        <span>✎ Zeichnen</span><span>Pinsel, Spray, Radierer – landet als Bild auf der Fläche</span>
+        <span><kbd>←↑→↓</kbd></span><span>1 Einheit schieben, mit <kbd>⇧</kbd> 10</span>
+        <span><kbd>⌘</kbd> halten</span><span>Einrasten aus</span>
+        <span><kbd>⇧</kbd> beim Ziehen</span><span>nur waagerecht/senkrecht, Drehen in 15°</span>
+        <span>Ecken</span><span>proportional skalieren</span>
+        <span>✂ Zuschneiden</span><span>Rahmen über dem ganzen Bild ziehen, wie bei Vorschau/Freeform</span>
+        <span><kbd>⌘D</kbd></span><span>Duplizieren</span>
+        <span><kbd>⌘C</kbd> <kbd>⌘V</kbd></span><span>Kopieren, auch auf andere Seiten</span>
+        <span><kbd>⌘↑</kbd> <kbd>⌘↓</kbd></span><span>Ebene vor/zurück (mit <kbd>⇧</kbd> ganz)</span>
+        <span><kbd>⌘Z</kbd></span><span>Rückgängig</span>
+        <span><kbd>⌘</kbd>+Scrollen</span><span>Zoomen</span>
+        <span><kbd>⌘S</kbd></span><span>Speichern</span>
+      </div></div>`;
+  } else if (its.length > 1) {
+    insp.innerHTML = `<h3>${its.length} Elemente</h3><div class="sub">Gemeinsam verschieben oder ausrichten</div>
+      <div class="sec"><div class="t">Ausrichten</div><div class="btns">
+        <button data-al="l">Links</button><button data-al="c">Mitte</button><button data-al="r">Rechts</button>
+        <button data-al="t">Oben</button><button data-al="m">Mittig</button><button data-al="b">Unten</button>
+        <button data-al="dv">Gleichmäßig untereinander</button><button data-al="page">Auf Seitenmitte</button></div></div>
+      <div class="sec"><div class="btns"><button data-act="dup">Duplizieren</button><button data-act="front">Nach vorne</button><button data-act="back">Nach hinten</button><button data-act="del" class="danger">Löschen</button></div></div>`;
+  } else {
+    const it = its[0], isText = it.type === 'text';
+    const title = isText ? 'Text' : it.src.split('/').pop();
+    let h = `<h3>${esc(title)}</h3><div class="sub">${isText ? '' : esc(it.srcOriginal || it.src)}</div>`;
+    if (isText) h += `<div class="sec"><label class="f">Text<textarea data-k="text">${esc(it.text)}</textarea></label>
+      <div class="row three" style="margin-top:6px">${num('Größe', 'size', it.size, 'step="1" min="4"')}
+      <label class="f">Stärke<select data-k="weight">${[300, 400, 500, 600].map(w => `<option ${+it.weight === w ? 'selected' : ''}>${w}</option>`).join('')}</select></label>
+      <label class="f">Farbe<input type="color" data-k="color" value="${it.color || '#e2e2d8'}"></label></div>
+      <div class="btns">${['left', 'center', 'right'].map(a => `<button data-k-align="${a}" ${it.align === a ? 'class="ok"' : ''}>${{ left: 'Links', center: 'Zentriert', right: 'Rechts' }[a]}</button>`).join('')}</div></div>`;
+    h += `<div class="sec"><div class="t">Position und Größe</div>
+      <div class="row">${num('X', 'x', it.x)}${num('Y', 'y', it.y)}</div>
+      <div class="row">${num('Breite', 'w', it.w, 'min="10"')}${isText ? '' : num('Höhe', 'h', it.h, 'min="10"')}</div>
+      <div class="row three">${num('Drehung °', 'rot', it.rot || 0, 'step="0.5"')}${num('Deckkraft %', 'opacity', Math.round((it.opacity ?? 1) * 100), 'min="0" max="100"')}${isText ? '' : num('Ecken', 'radius', it.radius || 0, 'min="0"')}</div>
+      <div class="btns"><button data-al="page">Auf Seitenmitte</button>${!isText ? '<button data-act="crop">✂ Zuschneiden</button>' : ''}${!isText && isCropped(it) ? '<button data-act="ratio">Originalproportion</button>' : ''}${!isText && it.drawing ? '<button data-act="editdraw">✎ Zeichnung bearbeiten</button>' : ''}</div></div>`;
+    if (!isText) {
+      const [px, py] = (it.pos || '50% 50%').split(' ').map(parseFloat);
+      if (isCropped(it)) h += `<div class="sec"><div class="t">Bildausschnitt</div>
+        <label class="f">Waagerecht<input type="range" data-pos="x" min="0" max="100" value="${px}"></label>
+        <label class="f">Senkrecht<input type="range" data-pos="y" min="0" max="100" value="${py}"></label></div>`;
+      const cur = (it.tint || '').toLowerCase();
+      const sw = [['', 'Original'], ['#f2f0e8', 'Weiß'], ['#ae0315', 'Rot'], ['#0e0e0c', 'Schwarz']];
+      h += `<div class="sec"><div class="t">Einfärben${/\.png$/i.test(it.srcOriginal || it.src) ? '' : ' (nur bei PNG mit Transparenz sinnvoll)'}</div><div class="btns" style="align-items:center">
+        ${sw.map(([c, n]) => `<button class="sw ${c ? '' : 'none'} ${cur === c ? 'on' : ''}" title="${n}" data-tint="${c}" style="${c ? 'background:' + c : ''}"></button>`).join('')}
+        <input type="color" data-tint-custom value="${cur || '#ae0315'}" title="Eigene Farbe"></div></div>`;
+    }
+    h += linkFields(it);
+    if (!isText) h += `<div class="sec"><label class="f">Beschreibung für Screenreader &amp; Google<input type="text" data-k="alt" value="${esc(it.alt)}"></label></div>`;
+    h += `<div class="sec"><div class="btns"><button data-act="dup">Duplizieren</button><button data-act="front">Nach vorne</button><button data-act="back">Nach hinten</button><button data-act="del" class="danger">Löschen</button></div></div>`;
+    insp.innerHTML = h;
+  }
+}
+function liveInspector() {
+  if (sel.size !== 1) return; const it = byId([...sel][0]);
+  insp.querySelectorAll('[data-k]').forEach(inp => {
+    const k = inp.dataset.k; if (!['x', 'y', 'w', 'h', 'rot'].includes(k) || inp === document.activeElement) return;
+    inp.value = it[k] ?? 0;
+  });
+}
+insp.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.p) {
+    const p = P(), k = t.dataset.p;
+    if (t.type === 'checkbox') p[k] = t.checked;
+    else p[k] = k === 'height' ? Math.max(400, +t.value || 400) : t.value;
+    if (k !== 'title' && k !== 'navLabel' && k !== 'showInNav') { stage.style.height = p.height * zoom + 'px'; stage.style.background = p.background; $('#heightHandle').textContent = p.height + ' hoch'; }
+    return;
+  }
+  const it = byId([...sel][0]); if (!it) return;
+  if (t.dataset.k) {
+    const k = t.dataset.k;
+    if (k === 'newTab') it.newTab = t.checked;
+    else if (['text', 'link', 'alt', 'color'].includes(k)) it[k] = t.value.trim ? (k === 'text' ? t.value : t.value.trim()) : t.value;
+    else if (k === 'opacity') it.opacity = Math.min(1, Math.max(0, (+t.value || 0) / 100));
+    else if (k === 'weight') it.weight = +t.value;
+    else { if (t.value === '' || isNaN(+t.value)) return; it[k] = +t.value; }
+    if (k === 'link' && !it.link) it.newTab = false;
+    if (k === 'link' && /^https?:/.test(it.link)) it.newTab = true;
+    if (k === 'text' || k === 'link') refreshItem(it);
+    else { const el = elOf(it.id); applyGeom(el, it); if (it.type === 'text') it.h = r1(el.offsetHeight / zoom); }
+  } else if (t.dataset.pos) {
+    const [px, py] = (it.pos || '50% 50%').split(' ').map(parseFloat);
+    it.pos = t.dataset.pos === 'x' ? `${t.value}% ${py}%` : `${px}% ${t.value}%`; applyGeom(elOf(it.id), it);
+  }
+});
+insp.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.act === 'pickpage') {
+    const it = byId([...sel][0]); if (it && t.value) { it.link = t.value; it.newTab = false; commit(); refreshItem(it); renderInspector(); } return;
+  }
+  if (t.hasAttribute('data-tint-custom')) { const it = byId([...sel][0]); if (it) setTint(it, t.value); return; }
+  commit();
+  if (t.dataset.k === 'link' || t.dataset.k === 'newTab' || t.dataset.p) renderInspector();
+});
+insp.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const it = byId([...sel][0]);
+  if (b.dataset.al) return align(b.dataset.al);
+  if (b.dataset.kAlign) { it.align = b.dataset.kAlign; commit(); refreshItem(it); return renderInspector(); }
+  if (b.hasAttribute('data-tint')) return setTint(it, b.dataset.tint || null);
+  ({ del: removeSel, dup: duplicate, front: () => layer('front'), back: () => layer('back'),
+     ratio: () => resetRatio(it), editdraw: () => openDraw(it), crop: () => openCrop(it), delpage: deletePage }[b.dataset.act] || (() => {}))();
+});
+
+/* ───────────────── Kleinkram ───────────────── */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 3800); }
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open('seiten-editor', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbGet(k) { try { const db = await idb(); return await new Promise(res => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); } catch { return null; } }
+async function idbSet(k, v) { try { const db = await idb(); await new Promise(res => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = res; }); } catch {} }
+
+$('#btnConnect').onclick = connect;
+$('#btnSave').onclick = save;
+$('#btnPreview').onclick = preview;
+$('#btnUndo').onclick = undo;
+$('#btnRedo').onclick = redo;
+$('#btnText').onclick = addText;
+$('#btnDraw').onclick = () => openDraw(null);
+$('#btnNewPage').onclick = newPage;
+$('#btnFit').onclick = fit;
+$('#btnClean').onclick = () => { cleanView = !cleanView; stage.classList.toggle('clean', cleanView); $('#btnClean').textContent = cleanView ? 'Mit Rahmen' : 'Ohne Rahmen'; renderSelection(); };
+$('#pageSel').onchange = e => switchPage(e.target.value);
+$('#zoom').oninput = e => setZoom(e.target.value / 100);
+$('#assetSearch').oninput = renderAssets;
+
+renderPageSel(); updateUndoBtns(); renderAssets(); fit(); setDirty(false);
+idbGet('dir').then(async h => {
+  if (!h) return; savedHandle = h; updateConnectUI();
+  try { if (await h.queryPermission({ mode: 'readwrite' }) === 'granted') useDir(h); } catch {}
+});
+window.addEventListener('resize', () => { if (!drag) renderAll(); });
+</script>
+</body>
+</html>

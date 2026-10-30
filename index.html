@@ -1,125 +1,15 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pascal Ritter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=3"/>
+  <link rel="stylesheet" href="canvas.css">
 </head>
-<body class="home">
-
-  <nav>
-    <a href="index.html" class="nav-logo">Pascal Ritter</a>
-    <ul class="nav-links">
-      <li><a href="unterricht.html" data-de="Unterricht" data-en="Lessons">Unterricht</a></li>
-      <li><a href="producing.html">Producing</a></li>
-      <li><button class="lang-toggle" onclick="toggleLang()">EN</button></li>
-    </ul>
-  </nav>
-
-  <!-- HERO -->
-  <div class="hero-section">
-    <div class="hero-bg">
-      <img src="images/hero.jpg" alt="Pascal Ritter" class="hero-img"/>
-      <div class="hero-overlay"></div>
-    </div>
-    <div class="hero-text">
-      <h1>Pascal<br>Ritter</h1>
-      <p class="hero-sub" data-de="Musiker · Komponist · Gitarrist · Produzent · Lehrer" data-en="Musician · Composer · Guitarist · Producer · Teacher">
-        Musiker · Komponist · Gitarrist · Produzent · Lehrer
-      </p>
-    </div>
-    <div class="home-footer">
-      <div class="footer-links">
-        <a href="#">Instagram</a>
-        <a href="#">YouTube</a>
-        <a href="/cdn-cgi/l/email-protection#3141504252505d1f43584545544371565c491f5f5445" data-de="Kontakt" data-en="Contact">Kontakt</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROJEKTE -->
-  <div class="cards-section">
-
-    <div class="sticky-card" style="--card-bg: #0e0e0c;">
-      <a href="https://www.youtube.com/watch?v=ia70ynw9KkI" target="_blank" class="sticky-card-img-link">
-        <img src="eauphil.jpg" alt="EAUPHIL"/>
-        <span class="card-play-icon">▶</span>
-      </a>
-      <div class="sticky-card-body">
-        <p class="card-label" data-de="Jazz Quartett · Leipzig · Gitarrist & Komponist" data-en="Jazz Quartet · Leipzig · Guitarist & Composer">Jazz Quartett · Leipzig · Gitarrist & Komponist</p>
-        <h2 class="card-title">EAUPHIL</h2>
-        <p class="card-desc" data-de="Ein Leipziger Jazz Quartett mit einem modernen, frischen Ansatz auf zeitgenössischen Jazz." data-en="A Leipzig-based jazz quartet with a fresh, modern approach to contemporary jazz.">Ein Leipziger Jazz Quartett mit einem modernen, frischen Ansatz auf zeitgenössischen Jazz.</p>
-      </div>
-    </div>
-
-    <div class="sticky-card" style="--card-bg: #111110;">
-      <a href="https://www.youtube.com/watch?v=8qOaZN_Qj58" target="_blank" class="sticky-card-img-link">
-        <img src="taro.jpg" alt="Taro"/>
-        <span class="card-play-icon">▶</span>
-      </a>
-      <div class="sticky-card-body">
-        <p class="card-label" data-de="Neo Soul · Hannover · Gitarrist" data-en="Neo Soul · Hanover · Guitarist">Neo Soul · Hannover · Gitarrist</p>
-        <h2 class="card-title">Taro</h2>
-        <p class="card-desc" data-de="Ein Hannoveraner Neo Soul Projekt mit einem warmen, einzigartigen Sound." data-en="A Hanover-based neo soul project with a warm, unique sound.">Ein Hannoveraner Neo Soul Projekt mit einem warmen, einzigartigen Sound.</p>
-      </div>
-    </div>
-
-    <div class="sticky-card" style="--card-bg: #0d0d0b;">
-      <a href="https://www.youtube.com/watch?v=s6VEn4XC09k" target="_blank" class="sticky-card-img-link">
-        <img src="swfm.jpg" alt="Stein Walter Frank Meier"/>
-        <span class="card-play-icon">▶</span>
-      </a>
-      <div class="sticky-card-body">
-        <p class="card-label" data-de="Punk · Hannover · Gitarrist" data-en="Punk · Hanover · Guitarist">Punk · Hannover · Gitarrist</p>
-        <h2 class="card-title">Stein Walter<br>Frank Meier</h2>
-        <p class="card-desc" data-de="Eine Hannoveraner Punk Band mit roher Energie und direktem Sound." data-en="A Hanover-based punk band with raw energy and a direct sound.">Eine Hannoveraner Punk Band mit roher Energie und direktem Sound.</p>
-      </div>
-    </div>
-
-    <div class="sticky-card" style="--card-bg: #121210;">
-      <a href="https://www.youtube.com/watch?v=_RAsnxvQSBE" target="_blank" class="sticky-card-img-link">
-        <img src="theater.jpg" alt="Ein wenig Licht und diese Ruhe"/>
-        <span class="card-play-icon">▶</span>
-      </a>
-      <div class="sticky-card-body">
-        <p class="card-label" data-de="Theater · Gitarrist & Komponist" data-en="Theatre · Guitarist & Composer">Theater · Gitarrist & Komponist</p>
-        <h2 class="card-title">Ein wenig Licht<br>und diese Ruhe</h2>
-        <p class="card-desc" data-de="Uraufführung · Sibylle Berg · Katja Riemann · Regie: Lena Brasch" data-en="World Premiere · Sibylle Berg · Katja Riemann · Dir: Lena Brasch">Uraufführung · Sibylle Berg · Katja Riemann · Regie: Lena Brasch</p>
-      </div>
-    </div>
-
-    <div class="sticky-card" style="--card-bg: #111110;">
-      <a href="https://www.youtube.com/watch?v=Jtqk6m2iZWQ" target="_blank" class="sticky-card-img-link">
-        <img src="pascal-3.jpg" alt="Pat Metheny Ensemble"/>
-        <span class="card-play-icon">▶</span>
-      </a>
-      <div class="sticky-card-body">
-        <p class="card-label" data-de="Jazz · HMT MH · Gitarrist" data-en="Jazz · HMT MH · Guitarist">Jazz · HMT MH · Gitarrist</p>
-        <h2 class="card-title">Pat Metheny Ensemble</h2>
-        <p class="card-desc" data-de="Aufführung des Pat Metheny Ensembles an der Hochschule für Musik, Theater und Medien Hannover." data-en="Performance of the Pat Metheny Ensemble at the University of Music, Drama and Media Hanover.">Aufführung des Pat Metheny Ensembles an der Hochschule für Musik, Theater und Medien Hannover.</p>
-      </div>
-    </div>
-
-    <div class="sticky-card" style="--card-bg: #0e0e0c;">
-      <a href="https://www.youtube.com/watch?v=3mZ8CZf-W5M" target="_blank" class="sticky-card-img-link">
-        <img src="https://img.youtube.com/vi/3mZ8CZf-W5M/hqdefault.jpg" alt="All the Sex I've ever had"/>
-        <span class="card-play-icon">▶</span>
-      </a>
-      <div class="sticky-card-body">
-        <p class="card-label" data-de="Theater · Musiker & Sound-Designer" data-en="Theatre · Musician & Sound Designer">Theater · Musiker & Sound-Designer</p>
-        <h2 class="card-title">All the Sex<br>I've ever had</h2>
-        <p class="card-desc" data-de="Theaterstück des kanadischen Mammalian Diving Reflex Teams." data-en="Theatre piece by the Canadian Mammalian Diving Reflex team.">Theaterstück des kanadischen Mammalian Diving Reflex Teams.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <footer class="page-footer">
-    <p>© 2025 Pascal Ritter · <a href="impressum.html" style="color: var(--text-dim); text-decoration: none;">Impressum</a> · <a href="datenschutz.html" style="color: var(--text-dim); text-decoration: none;">Datenschutz</a></p>
-    <div class="footer-links">
-      <a href="#">Instagram</a>
-      <a href="#">YouTube</a>
-      <a href="/cdn-cgi/l/email-protection#c8b8a9bbaba9a4e6baa1bcbcadba88afa5b0e6a6adbc" data-de="Kontakt" data-en="Contact
+<body data-page="index">
+  <script src="layout.js"></script>
+  <script src="render.js"></script>
+</body>
+</html>
