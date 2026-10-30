@@ -151,6 +151,11 @@ kbd { background: #2a2a27; border: 1px solid #3a3a36; border-bottom-width: 2px; 
 .crop-h[data-h=n] { left: 50%; top: 0; cursor: ns-resize; } .crop-h[data-h=s] { left: 50%; top: 100%; cursor: ns-resize; }
 .crop-h[data-h=e] { left: 100%; top: 50%; cursor: ew-resize; } .crop-h[data-h=w] { left: 0; top: 50%; cursor: ew-resize; }
 
+.seg { display: flex; gap: 3px; background: #0d0d0c; border: 1px solid var(--line); border-radius: 7px; padding: 3px; }
+.seg button { background: none; border: none; border-radius: 5px; }
+.seg button.on { background: var(--red); color: #fff; }
+#stage.mobile-edit { box-shadow: 0 0 0 10px #15151300, 0 0 0 2px #3a3a36, 0 18px 50px rgba(0,0,0,.55); border-radius: 18px; }
+
 @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
 </style>
 </head>
@@ -161,6 +166,11 @@ kbd { background: #2a2a27; border: 1px solid #3a3a36; border-bottom-width: 2px; 
   <span class="sep"></span>
   <select id="pageSel" title="Seite wählen"></select>
   <button id="btnNewPage" title="Neue Seite anlegen">+ Seite</button>
+  <span class="sep"></span>
+  <div class="seg" role="group" aria-label="Ansicht">
+    <button id="btnDesktopMode" class="on" title="Desktop-Ansicht bearbeiten">🖥 Desktop</button>
+    <button id="btnMobileMode" title="Mobile Ansicht bearbeiten">📱 Mobil</button>
+  </div>
   <span class="sep"></span>
   <button id="btnText" title="Textfeld hinzufügen">+ Text</button>
   <button id="btnDraw" title="Pinsel, Spraydose, Radiergummi">✎ Zeichnen</button>
@@ -243,6 +253,7 @@ kbd { background: #2a2a27; border: 1px solid #3a3a36; border-bottom-width: 2px; 
 const $ = s => document.querySelector(s);
 let data = window.LAYOUT ? JSON.parse(JSON.stringify(window.LAYOUT))
   : { version: 1, width: 1600, pages: { index: { title: 'Pascal Ritter', background: '#000000', height: 3000, items: [] } } };
+if (!data.mobileWidth) data.mobileWidth = 480;
 let page = localStorage.getItem('editor.page');
 if (!data.pages[page]) page = Object.keys(data.pages)[0];
 let sel = new Set();
@@ -255,8 +266,28 @@ let dirty = false;
 let undoStack = [], redoStack = [], lastSnap = JSON.stringify(data);
 let clip = null;
 let cleanView = false;
-const W = () => data.width;
-const P = () => data.pages[page];
+let editMode = 'desktop';  // 'desktop' | 'mobile' – welche Ansicht gerade bearbeitet wird
+const rawPage = () => data.pages[page];
+/* Erzeugt beim ersten Umschalten in den Mobil-Modus eine eigenständige, von der
+   Desktop-Seite abgeleitete Kopie – danach völlig unabhängig editierbar. */
+function ensureMobile(pg) {
+  if (!pg.mobile) {
+    const s = data.mobileWidth / data.width;
+    pg.mobile = {
+      height: Math.max(400, Math.round(pg.height * s)),
+      items: pg.items.map(it => {
+        const c = JSON.parse(JSON.stringify(it));
+        c.x = r1(it.x * s); c.y = r1(it.y * s); c.w = r1(it.w * s);
+        if (it.type === 'text') c.size = Math.max(4, r1((it.size || 16) * s));
+        else { c.h = r1(it.h * s); c.radius = r1((it.radius || 0) * s); }
+        return c;
+      })
+    };
+  }
+  return pg.mobile;
+}
+const W = () => editMode === 'mobile' ? data.mobileWidth : data.width;
+const P = () => editMode === 'mobile' ? ensureMobile(rawPage()) : rawPage();
 const byId = id => P().items.find(i => i.id === id);
 const uid = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const resolve = p => blobs[p] || p;
@@ -327,7 +358,7 @@ function measureText() {
 function renderAll() {
   stage.style.width = W() * zoom + 'px';
   stage.style.height = P().height * zoom + 'px';
-  stage.style.background = P().background || '#000';
+  stage.style.background = rawPage().background || '#000';
   itemsEl.innerHTML = '';
   P().items.forEach(it => itemsEl.appendChild(makeEl(it)));
   measureText();
@@ -364,7 +395,7 @@ function newPage() {
   if (!/^[a-z0-9-]+$/.test(n)) return toast('Bitte nur a–z, 0–9 und Bindestriche verwenden.');
   if (['editor', 'impressum', 'datenschutz'].includes(n)) return toast(`„${n}“ ist schon für etwas anderes vergeben.`);
   if (data.pages[n]) return toast(`Die Seite „${n}“ gibt es schon.`);
-  data.pages[n] = { title: n.charAt(0).toUpperCase() + n.slice(1) + ' — Pascal Ritter', background: P().background || '#000000', height: 3000, items: [] };
+  data.pages[n] = { title: n.charAt(0).toUpperCase() + n.slice(1) + ' — Pascal Ritter', background: rawPage().background || '#000000', height: 3000, items: [] };
   commit(); switchPage(n);
   if (n === 'index') toast('Hinweis: Beim Speichern wird gefragt, ob die alte index.html ersetzt werden soll.');
 }
@@ -383,6 +414,14 @@ function setZoom(z, anchor) {
   if (anchor) { const sr = stage.getBoundingClientRect(); viewport.scrollLeft += sr.left + ux * zoom - ax; viewport.scrollTop += sr.top + uy * zoom - ay; }
 }
 function fit() { setZoom((viewport.clientWidth - 80) / W()); }
+function setEditMode(m) {
+  if (editMode === m) return;
+  editMode = m; sel.clear();
+  $('#btnDesktopMode').classList.toggle('on', m === 'desktop');
+  $('#btnMobileMode').classList.toggle('on', m === 'mobile');
+  stage.classList.toggle('mobile-edit', m === 'mobile');
+  fit(); renderAll();
+}
 
 /* ───────────────── Ordner & Dateien ───────────────── */
 async function dirOf(path, create) {
@@ -1067,20 +1106,7 @@ function linkFields(it) {
     <div class="row" style="margin-top:6px"><select data-act="pickpage"><option value="">Eigene Seite …</option>${opts}<option value="mailto:pascal.ritter@gmx.net">E-Mail</option></select>
     <label class="check"><input type="checkbox" data-k="newTab" ${it.newTab ? 'checked' : ''}> Neuer Tab</label></div></div>`;
 }
-function renderInspector() {
-  if (drag) return;
-  const its = [...sel].map(byId).filter(Boolean);
-  if (!its.length) {
-    const p = P();
-    insp.innerHTML = `<h3>${page}.html</h3><div class="sub">Seiteneinstellungen</div>
-      <div class="sec"><label class="f">Titel im Browser-Tab<input type="text" data-p="title" value="${esc(p.title)}"></label>
-      <div class="row" style="margin-top:6px"><label class="f">Hintergrund<input type="color" data-p="background" value="${p.background || '#000000'}"></label>
-      ${`<label class="f">Länge<input type="number" data-p="height" value="${p.height}" min="400" step="10"></label>`}</div></div>
-      <div class="sec"><div class="t">Navigation (auf jeder Seite oben)</div>
-      <label class="f">Linktext<input type="text" data-p="navLabel" placeholder="${page.charAt(0).toUpperCase() + page.slice(1)}" value="${esc(p.navLabel || '')}"></label>
-      <label class="check"><input type="checkbox" data-p="showInNav" ${p.showInNav === false ? '' : 'checked'}> In der Navigation zeigen</label></div>
-      <div class="sec"><div class="btns"><button data-act="delpage" class="danger">Seite löschen</button></div></div>
-      <div class="sec"><div class="t">Kurzbefehle</div><div class="keys">
+const SHORTCUTS_HTML = `<div class="sec"><div class="t">Kurzbefehle</div><div class="keys">
         <span><kbd>⇧</kbd>+Klick</span><span>Mehrere auswählen</span>
         <span><kbd>⌥</kbd>+Ziehen</span><span>Auswahlrahmen, auch über Fotos</span>
         <span>✎ Zeichnen</span><span>Pinsel, Spray, Radierer – landet als Bild auf der Fläche</span>
@@ -1096,6 +1122,33 @@ function renderInspector() {
         <span><kbd>⌘</kbd>+Scrollen</span><span>Zoomen</span>
         <span><kbd>⌘S</kbd></span><span>Speichern</span>
       </div></div>`;
+function renderInspector() {
+  if (drag) return;
+  const its = [...sel].map(byId).filter(Boolean);
+  if (!its.length) {
+    const rp = rawPage();
+    if (editMode === 'mobile') {
+      const p = P();
+      insp.innerHTML = `<h3>${page}.html — 📱 Mobil</h3><div class="sub">Eigene Anordnung für schmale Bildschirme</div>
+        <div class="sec"><label class="f">Länge (mobil)<input type="number" data-p="height" value="${p.height}" min="400" step="10"></label>
+        <p class="note" style="margin-top:8px">Wird automatisch anstelle der Desktop-Version gezeigt, wenn jemand die Seite auf einem schmalen Bildschirm öffnet. Hier kannst du völlig frei anordnen, unabhängig von der Desktop-Ansicht.</p></div>
+        <div class="sec"><div class="btns"><button data-act="mobresync">↻ Von Desktop neu übernehmen</button><button data-act="mobremove" class="danger">Mobile Ansicht entfernen</button></div></div>
+        ${SHORTCUTS_HTML}`;
+    } else {
+      const p = rp;
+      insp.innerHTML = `<h3>${page}.html</h3><div class="sub">Seiteneinstellungen</div>
+      <div class="sec"><label class="f">Titel im Browser-Tab<input type="text" data-p="title" value="${esc(p.title)}"></label>
+      <div class="row" style="margin-top:6px"><label class="f">Hintergrund<input type="color" data-p="background" value="${p.background || '#000000'}"></label>
+      ${`<label class="f">Länge<input type="number" data-p="height" value="${p.height}" min="400" step="10"></label>`}</div></div>
+      <div class="sec"><div class="t">Navigation (auf jeder Seite oben)</div>
+      <label class="f">Linktext<input type="text" data-p="navLabel" placeholder="${page.charAt(0).toUpperCase() + page.slice(1)}" value="${esc(p.navLabel || '')}"></label>
+      <label class="check"><input type="checkbox" data-p="showInNav" ${p.showInNav === false ? '' : 'checked'}> In der Navigation zeigen</label></div>
+      <div class="sec"><div class="t">Mobile Ansicht</div>
+      <p class="note">${rp.mobile ? 'Diese Seite hat schon eine eigene mobile Anordnung.' : 'Noch keine eigene mobile Anordnung – auf dem Handy wird die Desktop-Version automatisch verkleinert gezeigt.'}</p>
+      <div class="btns"><button data-act="gomobile">📱 Mobile Ansicht bearbeiten</button></div></div>
+      <div class="sec"><div class="btns"><button data-act="delpage" class="danger">Seite löschen</button></div></div>
+      ${SHORTCUTS_HTML}`;
+    }
   } else if (its.length > 1) {
     insp.innerHTML = `<h3>${its.length} Elemente</h3><div class="sub">Gemeinsam verschieben oder ausrichten</div>
       <div class="sec"><div class="t">Ausrichten</div><div class="btns">
@@ -1183,7 +1236,11 @@ insp.addEventListener('click', e => {
   if (b.dataset.kAlign) { it.align = b.dataset.kAlign; commit(); refreshItem(it); return renderInspector(); }
   if (b.hasAttribute('data-tint')) return setTint(it, b.dataset.tint || null);
   ({ del: removeSel, dup: duplicate, front: () => layer('front'), back: () => layer('back'),
-     ratio: () => resetRatio(it), editdraw: () => openDraw(it), crop: () => openCrop(it), delpage: deletePage }[b.dataset.act] || (() => {}))();
+     ratio: () => resetRatio(it), editdraw: () => openDraw(it), crop: () => openCrop(it), delpage: deletePage,
+     gomobile: () => setEditMode('mobile'),
+     mobresync: () => { if (confirm('Die mobile Ansicht wird durch eine neue, von der Desktop-Version abgeleitete Kopie ersetzt. Eigene Anpassungen in der mobilen Ansicht gehen dabei verloren. Fortfahren?')) { delete rawPage().mobile; sel.clear(); commit(); renderAll(); } },
+     mobremove: () => { if (confirm('Mobile Ansicht entfernen? Auf dem Handy wird die Seite danach automatisch aus der Desktop-Version verkleinert.')) { delete rawPage().mobile; setEditMode('desktop'); commit(); } },
+   }[b.dataset.act] || (() => {}))();
 });
 
 /* ───────────────── Kleinkram ───────────────── */
@@ -1201,6 +1258,8 @@ $('#btnRedo').onclick = redo;
 $('#btnText').onclick = addText;
 $('#btnDraw').onclick = () => openDraw(null);
 $('#btnNewPage').onclick = newPage;
+$('#btnDesktopMode').onclick = () => setEditMode('desktop');
+$('#btnMobileMode').onclick = () => setEditMode('mobile');
 $('#btnFit').onclick = fit;
 $('#btnClean').onclick = () => { cleanView = !cleanView; stage.classList.toggle('clean', cleanView); $('#btnClean').textContent = cleanView ? 'Mit Rahmen' : 'Ohne Rahmen'; renderSelection(); };
 $('#pageSel').onchange = e => switchPage(e.target.value);
