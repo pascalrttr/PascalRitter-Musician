@@ -25,7 +25,28 @@ window.LAYOUT = {
      "newTab": false,
      "alt": "theater"
     }
-   ]
+   ],
+   "mobile": {
+    "height": 400,
+    "items": [
+     {
+      "id": "imvuxnk6n5i5i",
+      "type": "image",
+      "src": "assets/lettering/theater.png",
+      "x": 26,
+      "y": 45,
+      "w": 277,
+      "h": 59,
+      "rot": 0,
+      "opacity": 1,
+      "radius": 0,
+      "pos": "50% 50%",
+      "link": "theater.html",
+      "newTab": false,
+      "alt": "theater"
+     }
+    ]
+   }
   },
   "theater": {
    "title": "Theater — Pascal Ritter",

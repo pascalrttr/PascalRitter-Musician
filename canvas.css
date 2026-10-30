@@ -14,6 +14,16 @@ body { font-family: 'Barlow', sans-serif; color: #e2e2d8; -webkit-font-smoothing
 .it img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .it-text { white-space: pre-wrap; line-height: 1.3; }
 
+/* Seiten mit eigener mobiler Anordnung bekommen zwei Bühnen; welche davon
+   sichtbar ist, entscheidet die Fensterbreite. Seiten ohne eigene mobile
+   Anordnung haben nur eine "stage" ohne diese Zusatzklassen und bleiben
+   davon unberührt – sie skalieren weiterhin proportional mit. */
+.stage-mobile { display: none; }
+@media (max-width: 640px) {
+  .stage-desktop { display: none; }
+  .stage-mobile { display: block; }
+}
+
 a.it { transition: filter .2s ease; }
 a.it:hover { filter: brightness(.7); }
 a.it:focus-visible { outline: 2px solid #AE0315; outline-offset: 4px; }
