@@ -24,6 +24,22 @@ body { font-family: 'Barlow', sans-serif; color: #e2e2d8; -webkit-font-smoothing
   .stage-mobile { display: block; }
 }
 
+/* Audio-Player (gleiche Regeln in canvas.css und editor.html; --k = Einheitsgröße, --ac = Akzentfarbe) */
+.pl { display: flex; align-items: center; gap: calc(var(--k) * 14); width: 100%; height: 100%; font-family: 'Barlow', sans-serif; }
+.pl-btn { flex: none; width: calc(var(--k) * 64); height: calc(var(--k) * 64); border-radius: 50%; border: 0; padding: 0; background: var(--ac); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.pl-btn svg { width: calc(var(--k) * 28); height: calc(var(--k) * 28); fill: currentColor; }
+.pl-btn .i-pause { display: none; }
+.pl.playing .i-pause { display: block; } .pl.playing .i-play { display: none; }
+.pl-main { flex: 1; min-width: 0; }
+.pl-title { font-size: calc(var(--k) * 24); font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-row { display: flex; align-items: center; gap: calc(var(--k) * 14); margin-top: calc(var(--k) * 10); }
+.pl-track { position: relative; flex: 1; height: calc(var(--k) * 6); background: color-mix(in srgb, currentColor 22%, transparent); border-radius: 99px; cursor: pointer; touch-action: none; }
+.pl-track::before { content: ''; position: absolute; left: 0; right: 0; top: calc(var(--k) * -12); bottom: calc(var(--k) * -12); }
+.pl-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--ac); border-radius: inherit; }
+.pl-knob { position: absolute; top: 50%; left: 0; width: calc(var(--k) * 16); height: calc(var(--k) * 16); margin: calc(var(--k) * -8) 0 0 calc(var(--k) * -8); border-radius: 50%; background: var(--ac); }
+.pl-time { font-size: calc(var(--k) * 18); font-variant-numeric: tabular-nums; opacity: .75; white-space: nowrap; }
+.pl-btn:focus-visible, .pl-track:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
+
 a.it { transition: filter .2s ease; }
 a.it:hover { filter: brightness(.7); }
 a.it:focus-visible { outline: 2px solid #AE0315; outline-offset: 4px; }

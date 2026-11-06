@@ -64,6 +64,23 @@ input[type=color] { width: 28px; height: 24px; padding: 0; border: 1px solid var
 .item { position: absolute; transform-origin: 50% 50%; cursor: move; user-select: none; -webkit-user-select: none; }
 .item img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; -webkit-user-drag: none; }
 .item.text { white-space: pre-wrap; line-height: 1.3; }
+.item.player * { pointer-events: none; }
+/* Audio-Player (gleiche Regeln in canvas.css und editor.html; --k = Einheitsgröße, --ac = Akzentfarbe) */
+.pl { display: flex; align-items: center; gap: calc(var(--k) * 14); width: 100%; height: 100%; font-family: 'Barlow', sans-serif; }
+.pl-btn { flex: none; width: calc(var(--k) * 64); height: calc(var(--k) * 64); border-radius: 50%; border: 0; padding: 0; background: var(--ac); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.pl-btn svg { width: calc(var(--k) * 28); height: calc(var(--k) * 28); fill: currentColor; }
+.pl-btn .i-pause { display: none; }
+.pl.playing .i-pause { display: block; } .pl.playing .i-play { display: none; }
+.pl-main { flex: 1; min-width: 0; }
+.pl-title { font-size: calc(var(--k) * 24); font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-row { display: flex; align-items: center; gap: calc(var(--k) * 14); margin-top: calc(var(--k) * 10); }
+.pl-track { position: relative; flex: 1; height: calc(var(--k) * 6); background: color-mix(in srgb, currentColor 22%, transparent); border-radius: 99px; cursor: pointer; touch-action: none; }
+.pl-track::before { content: ''; position: absolute; left: 0; right: 0; top: calc(var(--k) * -12); bottom: calc(var(--k) * -12); }
+.pl-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--ac); border-radius: inherit; }
+.pl-knob { position: absolute; top: 50%; left: 0; width: calc(var(--k) * 16); height: calc(var(--k) * 16); margin: calc(var(--k) * -8) 0 0 calc(var(--k) * -8); border-radius: 50%; background: var(--ac); }
+.pl-time { font-size: calc(var(--k) * 18); font-variant-numeric: tabular-nums; opacity: .75; white-space: nowrap; }
+.pl-btn:focus-visible, .pl-track:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
+
 .item:hover { outline: 1px solid rgba(77,163,255,.55); }
 .item.sel { outline: 1.5px solid var(--sel); }
 .item.has-link::after { content: '↗'; position: absolute; top: -9px; right: -9px; width: 18px; height: 18px; border-radius: 50%;
@@ -174,6 +191,8 @@ kbd { background: #2a2a27; border: 1px solid #3a3a36; border-bottom-width: 2px; 
   </div>
   <span class="sep"></span>
   <button id="btnText" title="Textfeld hinzufügen">+ Text</button>
+  <button id="btnPlayer" title="Audio-Player hinzufügen (mp3, m4a, wav …)">+ Player</button>
+  <input type="file" id="audioFile" accept="audio/*" hidden>
   <button id="btnDraw" title="Pinsel, Spraydose, Radiergummi">✎ Zeichnen</button>
   <button id="btnUndo" title="Rückgängig (⌘Z)">↶</button>
   <button id="btnRedo" title="Wiederholen (⇧⌘Z)">↷</button>
@@ -333,18 +352,26 @@ function applyGeom(el, it) {
   if (it.type === 'text') {
     s.height = ''; s.fontSize = it.size * zoom + 'px'; s.color = it.color || '#e2e2d8';
     s.fontWeight = it.weight || 400; s.textAlign = it.align || 'left'; s.fontFamily = fontCss(it.font);
+  } else if (it.type === 'player') {
+    s.height = it.h * zoom + 'px'; s.color = it.color || '#e2e2d8';
+    s.setProperty('--k', (zoom * it.h / 64) + 'px'); s.setProperty('--ac', it.accent || '#AE0315');
   } else {
     s.height = it.h * zoom + 'px';
     const img = el.querySelector('img');
     if (img) { img.style.objectPosition = it.pos || '50% 50%'; img.style.borderRadius = (it.radius || 0) * zoom + 'px'; }
   }
 }
+const PL_HTML = '<div class="pl"><button class="pl-btn" type="button" aria-label="Abspielen"><svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button><div class="pl-main"><div class="pl-title"></div><div class="pl-row"><div class="pl-track" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="pl-fill"></div><div class="pl-knob"></div></div><div class="pl-time">0:00</div></div></div></div>';
 function makeEl(it) {
   const el = document.createElement('div');
-  el.className = 'item' + (it.type === 'text' ? ' text' : '') + (it.link ? ' has-link' : '') + (sel.has(it.id) ? ' sel' : '');
+  el.className = 'item' + (it.type === 'text' ? ' text' : it.type === 'player' ? ' player' : '') + (it.link ? ' has-link' : '') + (sel.has(it.id) ? ' sel' : '');
   el.dataset.id = it.id;
   if (it.type === 'text') {
     const sp = document.createElement('span'); sp.textContent = it.text; el.appendChild(sp);
+  } else if (it.type === 'player') {
+    el.innerHTML = PL_HTML; el.querySelector('.pl-title').textContent = it.title || '';
+    el.querySelector('.pl-fill').style.width = el.querySelector('.pl-knob').style.left = '30%';
+    el.querySelector('.pl-time').textContent = '0:00';
   } else {
     const img = document.createElement('img');
     img.src = resolve(it.src); img.alt = '';
@@ -445,15 +472,17 @@ async function writeFile(path, content) {
 async function readFile(path) { const [d, name] = await dirOf(path, false); return (await d.getFileHandle(name)).getFile(); }
 async function exists(path) { try { await readFile(path); return true; } catch { return false; } }
 
-const IMG = /\.(png|jpe?g|webp|gif|svg|avif)$/i;
+const IMG = /\.(png|jpe?g|webp|gif|svg|avif)$/i, AUD = /\.(mp3|m4a|aac|wav|ogg|flac)$/i;
+let audios = [];
 async function scanAssets() {
-  assets = [];
+  assets = []; audios = [];
   let a; try { a = await dir.getDirectoryHandle('assets'); } catch { a = await dir.getDirectoryHandle('assets', { create: true }); }
   async function walk(h, prefix) {
     for await (const [name, entry] of h.entries()) {
       if (name.startsWith('.')) continue;
       const p = prefix + '/' + name;
       if (entry.kind === 'directory') await walk(entry, p);
+      else if (AUD.test(name)) audios.push(p);
       else if (IMG.test(name)) {
         const f = await entry.getFile();
         if (blobs[p]) URL.revokeObjectURL(blobs[p]);
@@ -650,6 +679,24 @@ async function addImage(p, cx, cy) {
   const h = r1(w * img.naturalHeight / img.naturalWidth);
   const it = { id: uid(), type: 'image', src: p, x: r1(cx - w / 2), y: r1(cy - h / 2), w, h, rot: 0, opacity: 1, radius: 0,
     pos: '50% 50%', link: '', newTab: false, alt: altFrom(p) };
+  P().items.push(it); sel = new Set([it.id]); commit(); renderAll();
+}
+async function importAudio(file) {
+  if (!dir) { toast('Erst den Repo-Ordner verbinden – dann kann die Audiodatei hineinkopiert werden.'); return null; }
+  const ext = (file.name.match(/\.[^.]+$/) || ['.mp3'])[0].toLowerCase();
+  const base = slug(file.name.replace(/\.[^.]+$/, '')) || 'audio';
+  let path = `assets/audio/${base}${ext}`, i = 2;
+  while (await exists(path)) path = `assets/audio/${base}-${i++}${ext}`;
+  await writeFile(path, file);
+  audios.push(path); audios.sort();
+  if (file.size > 95e6) toast('Achtung: über 95 MB – GitHub lehnt Dateien ab 100 MB ab. Bitte als MP3 kleiner exportieren.');
+  else if (file.size > 50e6) toast('Hinweis: Datei über 50 MB – GitHub warnt dabei, lädt aber noch hoch.');
+  return path;
+}
+function addPlayer(path, cx, cy) {
+  const w = Math.min(760, W() - 80), h = 64;
+  const it = { id: uid(), type: 'player', src: path, title: altFrom(path), x: r1(cx - w / 2), y: r1(cy - h / 2), w, h, rot: 0, opacity: 1,
+    color: '#e2e2d8', accent: '#AE0315' };
   P().items.push(it); sel = new Set([it.id]); commit(); renderAll();
 }
 function addText() {
@@ -1063,6 +1110,8 @@ viewport.addEventListener('drop', async e => {
   const u = unitPos(e);
   const p = e.dataTransfer.getData('text/x-asset');
   if (p) return addImage(p, u.x, u.y);
+  const aud = [...e.dataTransfer.files].filter(f => f.type.startsWith('audio/'));
+  for (const f of aud) { const path = await importAudio(f); if (path) addPlayer(path, u.x, u.y); }
   const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
   for (const [k, f] of files.entries()) { const path = await importFile(f); if (path) await addImage(path, u.x + k * 40, u.y + k * 40); }
 });
@@ -1165,8 +1214,8 @@ function renderInspector() {
         <button data-al="dv">Gleichmäßig untereinander</button><button data-al="page">Auf Seitenmitte</button></div></div>
       <div class="sec"><div class="btns"><button data-act="dup">Duplizieren</button><button data-act="front">Nach vorne</button><button data-act="back">Nach hinten</button><button data-act="del" class="danger">Löschen</button></div></div>`;
   } else {
-    const it = its[0], isText = it.type === 'text';
-    const title = isText ? 'Text' : it.src.split('/').pop();
+    const it = its[0], isText = it.type === 'text', isPlayer = it.type === 'player';
+    const title = isText ? 'Text' : isPlayer ? 'Audio-Player' : it.src.split('/').pop();
     let h = `<h3>${esc(title)}</h3><div class="sub">${isText ? '' : esc(it.srcOriginal || it.src)}</div>`;
     if (isText) h += `<div class="sec"><label class="f">Text<textarea data-k="text">${esc(it.text)}</textarea></label>
       <label class="f" style="margin-top:6px">Schrift<select data-k="font">${FONTS.map(([v, l]) => `<option value="${v}" ${(it.font || 'Barlow') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -1174,12 +1223,17 @@ function renderInspector() {
       <label class="f">Stärke<select data-k="weight">${[300, 400, 500, 600].map(w => `<option ${+it.weight === w ? 'selected' : ''}>${w}</option>`).join('')}</select></label>
       <label class="f">Farbe<input type="color" data-k="color" value="${it.color || '#e2e2d8'}"></label></div>
       <div class="btns">${['left', 'center', 'right'].map(a => `<button data-k-align="${a}" ${it.align === a ? 'class="ok"' : ''}>${{ left: 'Links', center: 'Zentriert', right: 'Rechts' }[a]}</button>`).join('')}</div></div>`;
+    if (isPlayer) h += `<div class="sec"><label class="f">Titel<input type="text" data-k="title" value="${esc(it.title || '')}"></label>
+      <label class="f" style="margin-top:6px">Audiodatei<select data-k="src">${(audios.includes(it.src) ? audios : [it.src, ...audios]).map(a => `<option value="${esc(a)}" ${a === it.src ? 'selected' : ''}>${esc(a.replace(/^assets\//, ''))}</option>`).join('')}</select></label>
+      <div class="row" style="margin-top:6px"><label class="f">Textfarbe<input type="color" data-k="color" value="${it.color || '#e2e2d8'}"></label>
+      <label class="f">Akzentfarbe<input type="color" data-k="accent" value="${it.accent || '#AE0315'}"></label></div>
+      <p class="note" style="margin-top:6px">Neue Audiodatei: oben auf <b>+ Player</b> klicken oder die Datei auf die Fläche ziehen.</p></div>`;
     h += `<div class="sec"><div class="t">Position und Größe</div>
       <div class="row">${num('X', 'x', it.x)}${num('Y', 'y', it.y)}</div>
       <div class="row">${num('Breite', 'w', it.w, 'min="10"')}${isText ? '' : num('Höhe', 'h', it.h, 'min="10"')}</div>
-      <div class="row three">${num('Drehung °', 'rot', it.rot || 0, 'step="0.5"')}${num('Deckkraft %', 'opacity', Math.round((it.opacity ?? 1) * 100), 'min="0" max="100"')}${isText ? '' : num('Ecken', 'radius', it.radius || 0, 'min="0"')}</div>
-      <div class="btns"><button data-al="page">Auf Seitenmitte</button>${!isText ? '<button data-act="crop">✂ Zuschneiden</button>' : ''}${!isText && isCropped(it) ? '<button data-act="ratio">Originalproportion</button>' : ''}${!isText && it.drawing ? '<button data-act="editdraw">✎ Zeichnung bearbeiten</button>' : ''}</div></div>`;
-    if (!isText) {
+      <div class="row three">${num('Drehung °', 'rot', it.rot || 0, 'step="0.5"')}${num('Deckkraft %', 'opacity', Math.round((it.opacity ?? 1) * 100), 'min="0" max="100"')}${isText || isPlayer ? '' : num('Ecken', 'radius', it.radius || 0, 'min="0"')}</div>
+      <div class="btns"><button data-al="page">Auf Seitenmitte</button>${!isText && !isPlayer ? '<button data-act="crop">✂ Zuschneiden</button>' : ''}${!isText && isCropped(it) ? '<button data-act="ratio">Originalproportion</button>' : ''}${!isText && it.drawing ? '<button data-act="editdraw">✎ Zeichnung bearbeiten</button>' : ''}</div></div>`;
+    if (!isText && !isPlayer) {
       const [px, py] = (it.pos || '50% 50%').split(' ').map(parseFloat);
       if (isCropped(it)) h += `<div class="sec"><div class="t">Bildausschnitt</div>
         <label class="f">Waagerecht<input type="range" data-pos="x" min="0" max="100" value="${px}"></label>
@@ -1190,8 +1244,8 @@ function renderInspector() {
         ${sw.map(([c, n]) => `<button class="sw ${c ? '' : 'none'} ${cur === c ? 'on' : ''}" title="${n}" data-tint="${c}" style="${c ? 'background:' + c : ''}"></button>`).join('')}
         <input type="color" data-tint-custom value="${cur || '#ae0315'}" title="Eigene Farbe"></div></div>`;
     }
-    h += linkFields(it);
-    if (!isText) h += `<div class="sec"><label class="f">Beschreibung für Screenreader &amp; Google<input type="text" data-k="alt" value="${esc(it.alt)}"></label></div>`;
+    if (!isPlayer) h += linkFields(it);
+    if (!isText && !isPlayer) h += `<div class="sec"><label class="f">Beschreibung für Screenreader &amp; Google<input type="text" data-k="alt" value="${esc(it.alt)}"></label></div>`;
     h += `<div class="sec"><div class="btns"><button data-act="dup">Duplizieren</button><button data-act="front">Nach vorne</button><button data-act="back">Nach hinten</button><button data-act="del" class="danger">Löschen</button></div></div>`;
     insp.innerHTML = h;
   }
@@ -1216,14 +1270,14 @@ insp.addEventListener('input', e => {
   if (t.dataset.k) {
     const k = t.dataset.k;
     if (k === 'newTab') it.newTab = t.checked;
-    else if (k === 'font') it.font = t.value;
+    else if (k === 'font' || k === 'title' || k === 'accent' || k === 'src') it[k] = t.value;
     else if (['text', 'link', 'alt', 'color'].includes(k)) it[k] = t.value.trim ? (k === 'text' ? t.value : t.value.trim()) : t.value;
     else if (k === 'opacity') it.opacity = Math.min(1, Math.max(0, (+t.value || 0) / 100));
     else if (k === 'weight') it.weight = +t.value;
     else { if (t.value === '' || isNaN(+t.value)) return; it[k] = +t.value; }
     if (k === 'link' && !it.link) it.newTab = false;
     if (k === 'link' && /^https?:/.test(it.link)) it.newTab = true;
-    if (k === 'text' || k === 'link') refreshItem(it);
+    if (k === 'text' || k === 'link' || it.type === 'player') refreshItem(it);
     else { const el = elOf(it.id); applyGeom(el, it); if (it.type === 'text') it.h = r1(el.offsetHeight / zoom); }
   } else if (t.dataset.pos) {
     const [px, py] = (it.pos || '50% 50%').split(' ').map(parseFloat);
@@ -1266,6 +1320,11 @@ $('#btnPreview').onclick = preview;
 $('#btnUndo').onclick = undo;
 $('#btnRedo').onclick = redo;
 $('#btnText').onclick = addText;
+$('#btnPlayer').onclick = () => { if (!dir) return toast('Erst den Repo-Ordner verbinden.'); $('#audioFile').click(); };
+$('#audioFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const path = await importAudio(f); if (path) { const c = viewCenter(); addPlayer(path, c.x, c.y); }
+};
 $('#btnDraw').onclick = () => openDraw(null);
 $('#btnNewPage').onclick = newPage;
 $('#btnDesktopMode').onclick = () => setEditMode('desktop');
