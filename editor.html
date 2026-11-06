@@ -8,6 +8,7 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600&family=Courier+Prime:wght@400;700&family=Cutive+Mono&family=Permanent+Marker&family=Playfair+Display:wght@400;500;600&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #121211; --panel: #1b1b19; --panel2: #232321; --line: #2e2e2b;
@@ -317,6 +318,13 @@ function setDirty(v) {
 }
 
 /* ───────────────── Darstellung ───────────────── */
+const FONTS = [
+  ['Barlow', 'Barlow'], ['Barlow Condensed', 'Barlow Condensed (schmal)'],
+  ['Special Elite', 'Schreibmaschine – rau (Special Elite)'], ['Courier Prime', 'Schreibmaschine – sauber (Courier Prime)'],
+  ['Cutive Mono', 'Schreibmaschine – fein (Cutive Mono)'], ['Playfair Display', 'Serif (Playfair Display)'],
+  ['Permanent Marker', 'Filzstift (Permanent Marker)']
+];
+const fontCss = f => `'${f || 'Barlow'}', sans-serif`;
 function applyGeom(el, it) {
   const s = el.style;
   s.left = it.x * zoom + 'px'; s.top = it.y * zoom + 'px'; s.width = it.w * zoom + 'px';
@@ -324,7 +332,7 @@ function applyGeom(el, it) {
   s.opacity = it.opacity == null ? 1 : it.opacity;
   if (it.type === 'text') {
     s.height = ''; s.fontSize = it.size * zoom + 'px'; s.color = it.color || '#e2e2d8';
-    s.fontWeight = it.weight || 400; s.textAlign = it.align || 'left';
+    s.fontWeight = it.weight || 400; s.textAlign = it.align || 'left'; s.fontFamily = fontCss(it.font);
   } else {
     s.height = it.h * zoom + 'px';
     const img = el.querySelector('img');
@@ -1161,6 +1169,7 @@ function renderInspector() {
     const title = isText ? 'Text' : it.src.split('/').pop();
     let h = `<h3>${esc(title)}</h3><div class="sub">${isText ? '' : esc(it.srcOriginal || it.src)}</div>`;
     if (isText) h += `<div class="sec"><label class="f">Text<textarea data-k="text">${esc(it.text)}</textarea></label>
+      <label class="f" style="margin-top:6px">Schrift<select data-k="font">${FONTS.map(([v, l]) => `<option value="${v}" ${(it.font || 'Barlow') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <div class="row three" style="margin-top:6px">${num('Größe', 'size', it.size, 'step="1" min="4"')}
       <label class="f">Stärke<select data-k="weight">${[300, 400, 500, 600].map(w => `<option ${+it.weight === w ? 'selected' : ''}>${w}</option>`).join('')}</select></label>
       <label class="f">Farbe<input type="color" data-k="color" value="${it.color || '#e2e2d8'}"></label></div>
@@ -1207,6 +1216,7 @@ insp.addEventListener('input', e => {
   if (t.dataset.k) {
     const k = t.dataset.k;
     if (k === 'newTab') it.newTab = t.checked;
+    else if (k === 'font') it.font = t.value;
     else if (['text', 'link', 'alt', 'color'].includes(k)) it[k] = t.value.trim ? (k === 'text' ? t.value : t.value.trim()) : t.value;
     else if (k === 'opacity') it.opacity = Math.min(1, Math.max(0, (+t.value || 0) / 100));
     else if (k === 'weight') it.weight = +t.value;

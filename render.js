@@ -14,6 +14,24 @@
   if (p.title) document.title = p.title;
   document.documentElement.style.background = document.body.style.background = p.background || '#000';
 
+  /* Zusätzliche Schriften nur laden, wenn ein Textfeld sie wirklich nutzt (Barlow lädt die Seite selbst). */
+  var FONT_QUERY = {
+    'Barlow Condensed': 'Barlow+Condensed:wght@300;400;500;600', 'Courier Prime': 'Courier+Prime:wght@400;700',
+    'Cutive Mono': 'Cutive+Mono', 'Permanent Marker': 'Permanent+Marker',
+    'Playfair Display': 'Playfair+Display:wght@400;500;600', 'Special Elite': 'Special+Elite'
+  };
+  var used = {};
+  (p.items.concat(p.mobile && p.mobile.items || [])).forEach(function (it) {
+    if (it.type === 'text' && it.font && FONT_QUERY[it.font]) used[it.font] = 1;
+  });
+  var fams = Object.keys(used).map(function (f) { return 'family=' + FONT_QUERY[f]; });
+  if (fams.length) {
+    var fl = document.createElement('link');
+    fl.rel = 'stylesheet';
+    fl.href = 'https://fonts.googleapis.com/css2?' + fams.join('&') + '&display=swap';
+    document.head.appendChild(fl);
+  }
+
   function buildStage(items, W, H, variantClass) {
     function pct(v, total) { return (v / total * 100) + '%'; }
     function cq(v) { return (v / W * 100) + 'cqw'; }
@@ -43,6 +61,7 @@
         s.color = it.color || '#e2e2d8';
         s.fontWeight = it.weight || 400;
         s.textAlign = it.align || 'left';
+        if (it.font) s.fontFamily = "'" + it.font + "', sans-serif";
       } else {
         s.height = pct(it.h, H);
         var img = document.createElement('img');
