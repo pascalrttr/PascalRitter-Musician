@@ -94,7 +94,7 @@ window.LAYOUT = {
      "weight": 400,
      "align": "left",
      "x": 301,
-     "y": 619,
+     "y": 634,
      "w": 672,
      "h": 53,
      "rot": 0,
