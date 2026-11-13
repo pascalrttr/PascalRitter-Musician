@@ -2128,7 +2128,7 @@ window.LAYOUT = {
     {
      "id": "imwdpn2hpdxf4",
      "type": "image",
-     "src": "assets/uploads/farbig/Schrift_DUO_weiss-ae0315.png",
+     "src": "assets/uploads/farbig/Schrift_DUO_weiss-a45d60.png",
      "x": 400,
      "y": 214,
      "w": 800,
@@ -2141,7 +2141,7 @@ window.LAYOUT = {
      "newTab": false,
      "alt": "",
      "srcOriginal": "assets/uploads/Schrift_DUO_weiss.png",
-     "tint": "#ae0315"
+     "tint": "#a45d60"
     },
     {
      "id": "imwdpqcm4p6z3",
